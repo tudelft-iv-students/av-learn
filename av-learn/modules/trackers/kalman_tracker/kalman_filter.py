@@ -1,15 +1,9 @@
-# av-learn.
-# Code written by Mats van der Gulik, Athanasios Masouris & Stylianos Poulakakis-Daktylidis, 2022.
+# This method is based on the Kalman filter implementation by filterpy:
+# https://filterpy.readthedocs.io/en/latest/
 
 import numpy as np
-import sys
 import numpy.linalg as linalg
 from copy import deepcopy
-
-PYTHON_VERSION = sys.version_info[0]
-
-if not PYTHON_VERSION == 3:
-    raise ValueError("av-learn only supports Python version 3.")
 
 
 class KalmanFilter(object):
@@ -18,15 +12,16 @@ class KalmanFilter(object):
     """
 
     def __init__(self,
-                 F: np.ndarray | None = None,
-                 B: np.ndarray | None = None,
-                 H: np.ndarray | None = None,
-                 Q: np.ndarray | None = None,
-                 R: np.ndarray | None = None,
-                 P: np.ndarray | None = None,
-                 x0: np.ndarray | None = None):
+                 F: np.ndarray = None,
+                 B: np.ndarray = None,
+                 H: np.ndarray = None,
+                 Q: np.ndarray = None,
+                 R: np.ndarray = None,
+                 P: np.ndarray = None,
+                 x0: np.ndarray = None):
         """
-        loads initial Kalman filter parameters and gives default values for unspecified parameters.
+        Loads initial Kalman filter parameters and gives default values for 
+        unspecified parameters.
         :param F: (optional) state transition matrix
         :param B: (optional) control transition matrix
         :param H: (optional) measurement function
@@ -76,12 +71,13 @@ class KalmanFilter(object):
         self.P_post = self.P.copy()
 
     def predict(self,
-                u: np.ndarray | None = None,
-                B: np.ndarray | None = None,
-                F: np.ndarray | None = None,
-                Q: np.ndarray | None = None):
+                u: np.ndarray = None,
+                B: np.ndarray = None,
+                F: np.ndarray = None,
+                Q: np.ndarray = None):
         """
-        Uses the Kalman filter state propagation equations to predict next state.
+        Uses the Kalman filter state propagation equations to predict next 
+        state.
         :param u: (optional) control vector
         :param B: (optional) control transition matrix
         :param F: (optional) state transition matrix
@@ -109,13 +105,14 @@ class KalmanFilter(object):
         self.P_prior = self.P.copy()
 
     def update(self,
-               z: np.ndarray | None,
-               R: np.ndarray | None = None,
-               H: np.ndarray | None = None):
+               z: np.ndarray,
+               R: np.ndarray = None,
+               H: np.ndarray = None):
         """
         Adds a new measurement to the Kalman filter and updates its state.
         :param z: measurement for this update
-        :param R: (optional) state uncertainty covariance, used to overwite measurement noise
+        :param R: (optional) state uncertainty covariance, used to overwite 
+                measurement noise
         :param H: (optional) measurement function
         """
 
@@ -145,7 +142,7 @@ class KalmanFilter(object):
         # S = HPH' + R - project system uncertainty into measurement space
         self.S = R + np.dot(H, PHT)
         # K = PH'inv(S) - map system uncertainty into Kalman gain
-        self.K = np.dot(PHT, np.linalg.inv(self.S))
+        self.K = np.dot(PHT, linalg.inv(self.S))
 
         # x = x + Ky - predict new x with residual scaled by the Kalman gain
         self.x = self.x + np.dot(self.K, self.y)
@@ -161,7 +158,7 @@ class KalmanFilter(object):
         self.P_post = self.P.copy()
 
 
-def reshape_z(z: np.ndarray, dim_z: int, ndim: int):
+def reshape_z(z: np.ndarray, dim_z: int, ndim: int) -> np.ndarray:
     """
     Ensures that measurement z is of (dim_z, 1) dimensions
     :param z: measurement for this update
