@@ -13,8 +13,8 @@ from nuscenes.eval.detection.data_classes import DetectionBox
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-from ab3ed_mot_tracker import AB3DMOT
-from utils import mkdir_if_missing
+from ab3d_mot_tracker import AB3DMOT
+from utils import mkdir_if_missing, NUSCENES_TRACKING_CLASSES
 
 
 class KalmanTracker(object):
@@ -23,47 +23,44 @@ class KalmanTracker(object):
     """
 
     def __init__(self,
-                 data_split: str,
-                 covariance_id: int = 0,
+                 data_path: str,
+                 cfg_path: str,
+                 det_path: str,
                  match_distance: str = "iou",
                  match_threshold: float = 0.1,
                  match_algorithm: str = "hungarian",
-                 use_angular_velocity: bool = False,
                  dataset: str = "nuscenes",
                  save_root: str = "results/default"):
 
         # python main.py val 0 iou 0.1 h false nuscenes results/000001
         """
         Loads the initial Kalman tracker parameters.
-        :param data_split: the split of the dataset
-        :param covariance_id: defines uncertainty and covariance parameters of 
-                        the Kalman filter (Default: 0)
+        :param data_path: the path to the dataset
+        :param cfg_path: path to configuration file for Kalman filter covariance
+                     matrices
+        :param det_path: path to the json file with the detections
         :param match_distance: defines the mathcing distance used, either iou or
                         mahalanobis (Default: "iou")
         :param match_threshold: defines the matching threshold used in the 
                         hungarian algorithm (Default: 0.1)
         :param match_algorithm: defines the matching algorithm used
                         (Default: "hungarian")
-        :param use_angular_velocity: used to define the state transition matrix 
-                        and measurement function for the Kalman filters
         :param dataset: the used dataset (Default: "nuscenes")
         :param save_root: the path to which the results will be saved 
                         (Default: "results/default")
         """
-        if (covariance_id not in {0, 1, 2}):
-            raise ValueError("covariance_id takes only values {0, 1, 2}.")
         if (match_distance not in {"iou", "mahalanobis"}):
             raise ValueError("match_distance takes only values {'iou',"
                              "'mahalanobis'}.")
         if (match_algorithm not in {"hungarian", "greedy", "hungarian_thres"}):
             raise ValueError("match_algorithm takes only values {'hungarian',"
                              "'greedy', 'hungarian_thres'}.")
-        self.data_split = data_split
-        self.covariance_id = covariance_id
+        self.data_path = data_path
+        self.cfg_path = cfg_path
+        self.det_path = det_path
         self.match_distance = match_distance
         self.match_threshold = match_threshold
         self.match_algorithm = match_algorithm
-        self.use_angular_velocity = use_angular_velocity
         self.dataset = dataset
         self.save_root = os.path.join('./' + save_root)
 
@@ -99,50 +96,15 @@ class KalmanTracker(object):
         }
         """
         # create directory folder for the results
-        save_dir = os.path.join(self.save_root, self.data_split)
+        version = self.data_path.split("/")[-1]
+        data_root = self.data_path[:-len(version)-1]
+
+        save_dir = os.path.join(self.save_root, self.dataset + version)
+        output_path = os.path.join(
+            save_dir, 'results_tracking.json')
         mkdir_if_missing(save_dir)
-        # TODO: change path to where the datasets would be saved
-        # paths to detections json file and nuscenes data version
-        if 'train' == self.data_split:
-            detection_file = 'D:/av-learn/av-learn/modules/trackers/' \
-                             'dataset/nuscenes_new/megvii_train.json'
-            data_root = 'D:/av-learn/av-learn/modules/trackers/dataset/' \
-                        'nuscenes/trainval/'
-            version = 'v1.0-trainval'
-            output_path = os.path.join(
-                save_dir, 'results_train_probabilistic_tracking.json')
-        elif 'val' == self.data_split:
-            detection_file = 'D:/av-learn/av-learn/modules/trackers/' \
-                             'dataset/nuscenes_new/megvii_val.json'
-            data_root = 'D:/av-learn/av-learn/modules/trackers/dataset/' \
-                        'nuscenes/trainval/'
-            version = 'v1.0-trainval'
-            output_path = os.path.join(
-                save_dir, 'results_val_probabilistic_tracking.json')
-        elif 'mini-train' == self.data_split:
-            detection_file = 'D:/av-learn/av-learn\modules/trackers/' \
-                'dataset/nuscenes_new/megvii_train.json'
-            data_root = 'D:/av-learn/av-learn/modules/trackers/dataset/' \
-                        'nuscenes/mini/'
-            version = 'v1.0-mini'
-            output_path = os.path.join(
-                save_dir, 'results_mini-train_probabilistic_tracking.json')
-        elif 'mini-val' == self.data_split:
-            detection_file = 'D:/av-learn/av-learn/modules/trackers/' \
-                'dataset/nuscenes_new/megvii_val.json'
-            data_root = 'D:/av-learn/av-learn/modules/trackers/dataset/' \
-                        'nuscenes/mini/'
-            version = 'v1.0-mini'
-            output_path = os.path.join(
-                save_dir, 'results_mini-val_probabilistic_tracking.json')
-        elif 'test' == self.data_split:
-            detection_file = '/D:/av-learn/av-learn\modules/trackers/' \
-                             'dataset/nuscenes_new/megvii_test.json'
-            data_root = 'D:/av-learn/av-learn\modules/trackers/dataset/' \
-                        'nuscenes/test/'
-            version = 'v1.0-test'
-            output_path = os.path.join(
-                save_dir, 'results_test_probabilistic_tracking.json')
+
+        detection_file = self.det_path
 
         # create a Database object for nuScenes
         nusc = NuScenes(version=version, dataroot=data_root, verbose=True)
@@ -183,9 +145,9 @@ class KalmanTracker(object):
                     'first_sample_token']
                 current_sample = first_sample_token
                 # initialize an AB3DMOT tracker for each of the tracked classes
-                mot_trackers = {tracking_name: AB3DMOT(self.covariance_id,
+                mot_trackers = {tracking_name: AB3DMOT(
                                 tracking_name=tracking_name,
-                                use_angular_velocity=self.use_angular_velocity,
+                                cfg_path=self.cfg_path,
                                 tracking_nuscenes=True)
                                 for tracking_name in NUSCENES_TRACKING_CLASSES}
 
@@ -270,18 +232,6 @@ class KalmanTracker(object):
               .format(total_bb_boxes))
         print("Total Tracking took: {} or {} FPS"
               .format(total_time, total_frames/total_time))
-
-
-# classes for which the tracklets are calculated
-NUSCENES_TRACKING_CLASSES = [
-    'bicycle',
-    'bus',
-    'car',
-    'motorcycle',
-    'pedestrian',
-    'trailer',
-    'truck'
-]
 
 
 def format_sample_result(sample_token: str,

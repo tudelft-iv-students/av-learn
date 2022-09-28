@@ -6,9 +6,9 @@ from __future__ import print_function
 import copy
 import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
+from mmcv import Config
 
 from kalman_filter import KalmanFilter
-from covariance import Covariance
 from utils import roty, diff_orientation_correction, greedy_match, iou3d
 
 
@@ -19,24 +19,21 @@ class AB3DMOT(object):
     """
 
     def __init__(self,
-                 covariance_id: int = 0,
+                 cfg_path: str,
                  max_age: int = 2,
                  min_hits: int = 3,
                  tracking_name: str = 'car',
-                 use_angular_velocity: bool = False,
                  tracking_nuscenes: bool = False):
         """      
         Initializes an AB3DMOT tracker for the given class to be tracked. 
-        :param covariance_id: defines uncertainty and covariance parameters of 
-                        the Kalman filter (Default: 0)
+        :param cfg_path: path to configuration file for Kalman filter covariance
+                     matrices
         :param max_age: the maximum number frames allowed for a tracker to have 
                         no matches before being deactivated
         :param min_hits: the minimum number matches allowed for a tracker before 
                     being deactivated
         :param tracking_name: predicted class for this sample_result, e.g. car,
                         pedestrian
-        :param use_angular_velocity: used to define the state transition matrix 
-                        and measurement function for the Kalman filters
         :param tracking nuscenes: determines whether the nuscenes dataset is 
                         used
         """
@@ -48,9 +45,8 @@ class AB3DMOT(object):
         # after reorder:  [x, y, z, rot_y, l, w, h]
         self.reorder = [3, 4, 5, 6, 2, 1, 0]
         self.reorder_back = [6, 5, 4, 0, 1, 2, 3]
-        self.covariance_id = covariance_id
+        self.cfg_path = cfg_path
         self.tracking_name = tracking_name
-        self.use_angular_velocity = use_angular_velocity
         self.tracking_nuscenes = tracking_nuscenes
 
     def update(self, dets_all: dict, match_distance: str,
@@ -146,9 +142,8 @@ class AB3DMOT(object):
         for i in unmatched_dets:
             detection_score = scores[i][-1]
             track_score = detection_score
-            trk = KalmanBoxTracker(dets[i, :], scores[i, :], self.covariance_id,
-                                   track_score, self.tracking_name,
-                                   self.use_angular_velocity)
+            trk = KalmanBoxTracker(self.cfg_path, dets[i, :], scores[i, :],
+                                   track_score, self.tracking_name)
             # append new KalmanBoxTrackers to active trackers
             self.trackers.append(trk)
 
@@ -182,92 +177,36 @@ class KalmanBoxTracker(object):
     count = 0
 
     def __init__(self,
+                 cfg_path: str,
                  bbox3D: np.ndarray,
-                 score: float, covariance_id: int = 0,
+                 score: float,
                  track_score: float = None,
-                 tracking_name: str = 'car',
-                 use_angular_velocity: bool = False):
+                 tracking_name: str = 'car'):
         """
         Initialises a tracker using initial bounding box.
+        :param cfg_path: path to configuration file for Kalman filter covariance
+                     matrices
         :param bbox3D: the observed 3D box 
                     ([x, y, z, rot_y, l, w, h, x_dot, y_dot, z_dot])
         :param score: the detection score for the box
-        :param covariance_id: defines uncertainty and covariance parameters of 
-                        the Kalman filter (Default: 0)
         :param track_score: the tracking score for this detector
         :param tracking_name: predicted class for this sample_result, e.g. car,
                         pedestrian
-        :param use_angular_velocity: used to define the state transition matrix 
-                        and measurement function for the Kalman filters
         """
         # define constant velocity model
-        if not use_angular_velocity:
-            # state transition matrix
-            F = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
-                          [0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
-                          [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-            # measurement function
-            H = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])
-        # with angular velocity
-        else:
-            # state transition matrix
-            F = np.array([[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                          [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
-                          [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
-                          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
-            # measurement function
-            H = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]])
-        # initialize Kalman filter for bounding box with  state:
-        # [x, y, z, rot_y, l, w, h, x_dot, y_dot, z_dot]
-        self.kf = KalmanFilter(F=F, H=H)
+        cfg = Config.fromfile(cfg_path)
+        covariance = cfg.covariance
 
-        # Initialize the covariance matrix
-        if covariance_id == 0:  # exactly the same as AB3DMOT baseline
-            # state uncertainty, give high uncertainty to the unobservable
-            # initial velocities, covariance matrix
-            self.kf.P[7:, 7:] *= 1000.
-            self.kf.P *= 10.
-            # process uncertainty
-            self.kf.Q[7:, 7:] *= 0.01
-        elif covariance_id == 1:  # for kitti car
-            covariance = Covariance(covariance_id)
-            self.kf.P = covariance.P
-            self.kf.Q = covariance.Q
-            self.kf.R = covariance.R
-        elif covariance_id == 2:  # for nuscenes
-            covariance = Covariance(covariance_id)
-            self.kf.P = covariance.P[tracking_name]
-            self.kf.Q = covariance.Q[tracking_name]
-            self.kf.R = covariance.R[tracking_name]
-            if not use_angular_velocity:
-                self.kf.P = self.kf.P[:-1, :-1]
-                self.kf.Q = self.kf.Q[:-1, :-1]
+        if "nuscenes" not in cfg_path:
+            self.kf = KalmanFilter(F=covariance.F, H=covariance.H,
+                                   P=covariance.P,
+                                   Q=covariance.Q,
+                                   R=covariance.R)
+        else:
+            self.kf = KalmanFilter(F=covariance.F, H=covariance.H,
+                                   P=covariance.P[tracking_name],
+                                   Q=covariance.Q[tracking_name],
+                                   R=covariance.R[tracking_name])
 
         self.kf.x[:7] = bbox3D.reshape((7, 1))
 
@@ -290,7 +229,6 @@ class KalmanBoxTracker(object):
         # tracking score
         self.track_score = track_score
         self.tracking_name = tracking_name
-        self.use_angular_velocity = use_angular_velocity
 
     def update(self, bbox3D: np.ndarray, score: float):
         """ 

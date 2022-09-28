@@ -1,3 +1,7 @@
+# This method is implemented on top of
+# https://github.com/eddyhkchiu/mahalanobis_3d_multi_object_tracking
+# tracking open source code base.
+
 import os
 import copy
 import glob
@@ -6,6 +10,17 @@ import numpy as np
 import colorsys
 from scipy.spatial import ConvexHull
 from numba import jit
+
+# Nuscenes classes for which the tracklets are calculated
+NUSCENES_TRACKING_CLASSES = [
+    'bicycle',
+    'bus',
+    'car',
+    'motorcycle',
+    'pedestrian',
+    'trailer',
+    'truck'
+]
 
 
 def angle_in_range(angle):
