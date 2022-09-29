@@ -75,8 +75,6 @@ class Dataset(TorchDataset):
             except AttributeError:
                 raise AttributeError(f"'{type(self)}' and '{type(self.A)}'"
                                      f"objects have no attribute '{name}'")
-            except Exception as e: # TODO: check if can remove
-                raise e
             
     @property
     def dataset(self):
