@@ -5,7 +5,7 @@ This module is a fork of the [mmdetection3d](https://github.com/open-mmlab/mmdet
 
 ## Information about the module
 
-Below our some information about the MMDetection3D module. A more detailed version can be found [here](https://github.com/open-mmlab/mmdetection3d/blob/master/README.md).
+Some information about the MMDetection3D module are presented below. A more detailed version can be found [here](https://github.com/open-mmlab/mmdetection3d/blob/master/README.md).
 
 ## Introduction
 
