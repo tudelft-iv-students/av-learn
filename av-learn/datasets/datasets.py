@@ -48,7 +48,7 @@ class Dataset(TorchDataset):
     def __len__(self):
         return len(self._dataset)
     
-    def __getitem__(self, index: int) -> List[dict]:                                        
+    def __getitem__(self, index: int) -> torch.Tensor:                                        
         if self._time_horizon is None:
             indices = [index]
         elif self._time_horizon > 0:
