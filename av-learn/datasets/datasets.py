@@ -51,7 +51,7 @@ class Dataset(TorchDataset):
     def __getitem__(self, index: int) -> List[dict]:                                        
         if self._time_horizon is None:
             indices = [index]
-        if self._time_horizon > 0:
+        elif self._time_horizon > 0:
             indices = range(index, index + self._time_horizon)
         else:
             indices = range(index - self._time_horizon, index)
