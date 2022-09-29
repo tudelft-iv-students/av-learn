@@ -1,6 +1,6 @@
 import os
 from functools import reduce
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import torch
 from torch.utils.data import Dataset as TorchDataset
@@ -85,7 +85,7 @@ class Dataset(TorchDataset):
         return self._time_horizon
 
     @property.setter
-    def time_horizon(self, tmp: int) -> None: # TODO: rename tmp
+    def time_horizon(self, tmp: Optional[int]) -> None: # TODO: rename tmp
         if not isinstance(tmp, int):
             raise TypeError(f"tmp must be int, but got {type(tmp)}")
         if not abs(tmp) >= 1:
