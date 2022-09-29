@@ -73,7 +73,7 @@ class Dataset(TorchDataset):
             try:
                 return object.__getattribute__(self._dataset, name)
             except AttributeError:
-                raise AttributeError(f"'{type(self)}' and '{type(self.A)}'"
+                raise AttributeError(f"'{type(self)}' and '{type(self._dataset)}'"
                                      f"objects have no attribute '{name}'")
             
     @property
