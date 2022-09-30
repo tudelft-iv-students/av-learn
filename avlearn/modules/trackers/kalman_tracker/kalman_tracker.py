@@ -106,6 +106,14 @@ class KalmanTracker(object):
 
         detection_file = self.det_path
 
+        # nusc_dataset = NuScenesDataset("PATH TO NUSCENES CONFIG")
+        # version = nusc_dataset.version
+        # data_root = nusc_dataset.data_root
+        # save_dir = os.path.join(self.save_root, self.dataset + version)
+        # output_path = os.path.join(save_dir, 'results_tracking.json')
+        # mkdir_if_missing(save_dir)
+        # nusc = nusc_dataset.get_nuscenes_db()
+
         # create a Database object for nuScenes
         nusc = NuScenes(version=version, dataroot=data_root, verbose=True)
 
