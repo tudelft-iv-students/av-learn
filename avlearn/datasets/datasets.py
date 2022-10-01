@@ -40,7 +40,8 @@ class Dataset(TorchDataset):
                             f'but got {type(cfg)}')
             
         if not mode in ['train', 'test', 'val']:
-            raise ValueError(f"mode must be one of 'train', 'test' or 'val', but is '{mode}'")
+            raise ValueError("mode must be one of 'train', 'test' " 
+                             f"or 'val', but is '{mode}'")
         self._mode = mode
 
         mode_cfg = _rgetattr(cfg, f'data.{mode}') # raises AttributeError 
