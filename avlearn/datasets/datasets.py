@@ -38,17 +38,21 @@ class Dataset(TorchDataset):
         elif not isinstance(cfg, Config):
             raise TypeError('config must be a filename or Config object, '
                             f'but got {type(cfg)}')
+            
+        if not mode in ['train', 'test', 'val']:
+            raise ValueError(f"mode must be one of 'train', 'test' or 'val', but is '{mode}'")
+        self._mode = mode
 
         mode_cfg = _rgetattr(cfg, f'data.{mode}') # raises AttributeError 
-                                                  # if cfg does not contain mode
-        self._dataset = build_mmdet3d_dataset(mode_cfg)
-        
+                                                  # if cfg does not contain mode                                                                          
+        self._dataset = build_mmdet3d_dataset(mode_cfg, dict(test_mode=mode=='val')) # TODO: test if this works
+    
         self.time_horizon = time_horizon # call setter
             
     def __len__(self):
         return len(self._dataset)
     
-    def __getitem__(self, index: int) -> torch.Tensor:                                        
+    def __getitem__(self, index: int) -> torch.Tensor:                               
         if self._time_horizon is None:
             indices = [index]
         elif self._time_horizon > 0:
@@ -56,10 +60,7 @@ class Dataset(TorchDataset):
         else:
             indices = range(index - self._time_horizon, index)
         
-        if self.test_mode:
-            return torch.Tensor([self.prepare_test_data(i) for i in indices])
-        else:
-            return torch.Tensor([self.prepare_train_data(i) for i in indices])
+        return torch.Tensor([self._dataset[i] for i in indices])
         
     def __getattribute__(self, name: str) -> Any:
         """
@@ -78,6 +79,10 @@ class Dataset(TorchDataset):
     @property
     def dataset(self):
         return self._dataset
+
+    @property
+    def mode(self):
+        return self._mode
 
     @property
     def time_horizon(self):
