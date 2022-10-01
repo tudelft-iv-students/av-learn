@@ -1,6 +1,6 @@
 import os
 from functools import reduce
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Union
 
 import torch
 from torch.utils.data import Dataset as TorchDataset
