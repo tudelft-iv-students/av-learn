@@ -65,7 +65,6 @@ class Dataset(TorchDataset):
         """
         Provides direct access to dependency injected mmdetection3d dataset. 
         :param name: Attribute name.
-        :returns: ...........
         """
         try:
             return object.__getattribute__(self, name)
@@ -85,13 +84,13 @@ class Dataset(TorchDataset):
         return self._time_horizon
 
     @property.setter
-    def time_horizon(self, tmp: Optional[int]) -> None: # TODO: rename tmp
-        if not isinstance(tmp, int):
-            raise TypeError(f"tmp must be int, but got {type(tmp)}")
-        if not abs(tmp) >= 1:
-            raise ValueError("Absolute value of tmp must be greater"
-                             f"than or equal to 1, but is {abs(tmp)}")
-        self._time_horizon = tmp
+    def time_horizon(self, timesteps: Optional[int]) -> None: # TODO: rename tmp
+        if not isinstance(timesteps, int):
+            raise TypeError(f"'timesteps' must be int, but got {type(timesteps)}")
+        if not abs(timesteps) >= 1:
+            raise ValueError("Absolute value of 'timesteps' must be greater"
+                             f"than or equal to 1, but is {abs(timesteps)}")
+        self._time_horizon = timesteps
         
         
 class NuScenesDataset(Dataset):
