@@ -79,7 +79,7 @@ class Dataset(TorchDataset):
                                      f"objects have no attribute '{name}'")       
     
     @staticmethod
-    def _validate_timesteps_arg(func: Callable) -> Callable:
+    def _validate_timesteps_arg(func: Callable) -> Any:
         def wrapped(self, timesteps: int):
             if not isinstance(timesteps, int):
                 raise TypeError(f"timesteps must be int, but got {type(timesteps)}")
