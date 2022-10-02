@@ -93,11 +93,11 @@ class Dataset(TorchDataset):
         return self._dataset
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         return self._mode
 
     @property
-    def past_timesteps(self):
+    def past_timesteps(self) -> int:
         return self._past_timesteps
     
     @past_timesteps.setter
@@ -109,9 +109,8 @@ class Dataset(TorchDataset):
         """
         self._past_timesteps = timesteps
         
-        
     @property
-    def future_timesteps(self):
+    def future_timesteps(self) -> int:
         return self._future_timesteps
     
     @future_timesteps.setter
