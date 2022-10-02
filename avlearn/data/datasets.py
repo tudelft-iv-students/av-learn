@@ -6,10 +6,11 @@ import torch
 from torch.utils.data import Dataset as TorchDataset
 
 from mmcv import Config
-from mmdetection3d.mmdet3d.datasets.builder import \
+from mmdet3d.datasets.builder import \
     build_dataset as build_mmdet3d_dataset
-from mmdetection3d.mmdet3d.datasets.nuscenes_dataset import \
+from mmdet3d.datasets.nuscenes_dataset import \
     NuScenesDataset as MMDET3D_NuScenesDataset
+
 
 def _rgetattr(obj, attr, *args):
     """See https://stackoverflow.com/questions/31174295/getattr-and-setattr-on-nested-objects"""
