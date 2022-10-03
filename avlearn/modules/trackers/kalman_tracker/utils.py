@@ -9,7 +9,6 @@ import glob2
 import numpy as np
 import colorsys
 from scipy.spatial import ConvexHull
-from numba import jit
 
 # Nuscenes classes for which the tracklets are calculated
 NUSCENES_TRACKING_CLASSES = [
@@ -84,7 +83,6 @@ def greedy_match(distance_matrix: np.ndarray) -> np.ndarray:
     return matched_indices
 
 
-@jit
 def poly_area(x: np.array, y: np.array) -> float:
     """
     Calculates the area of a polygon given a set of (x, y) coordinates
@@ -95,7 +93,6 @@ def poly_area(x: np.array, y: np.array) -> float:
     return 0.5*np.abs(np.dot(x, np.roll(y, 1))-np.dot(y, np.roll(x, 1)))
 
 
-@jit
 def box3d_vol(corners: np.ndarray) -> float:
     """
     Calculates the volume of a 3D bounding box
@@ -108,7 +105,6 @@ def box3d_vol(corners: np.ndarray) -> float:
     return a*b*c
 
 
-@jit
 def convex_hull_intersection(p1: list, p2: list) -> list:
     """ 
     Computes area of two convex hull's intersection area.
@@ -189,7 +185,6 @@ def iou3d(corners1: np.ndarray, corners2: np.ndarray) -> tuple:
     return iou, iou_2d
 
 
-@jit
 def roty(t):
     """
     Performs a rotation about the y-axis
@@ -201,7 +196,6 @@ def roty(t):
                      [-s, 0,  c]])
 
 
-@jit
 def rotz(t):
     """
     Performs a rotation about the y-axis

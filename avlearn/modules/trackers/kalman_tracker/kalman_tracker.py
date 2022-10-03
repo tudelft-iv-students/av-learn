@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 from ab3d_mot_tracker import AB3DMOT
 from utils import mkdir_if_missing, NUSCENES_TRACKING_CLASSES
+from avlearn.datasets.dataset import NuScenesDataset
 
 
 class KalmanTracker(object):
@@ -23,22 +24,21 @@ class KalmanTracker(object):
     """
 
     def __init__(self,
-                 data_path: str,
+                 data_cfg_path: str,
                  cfg_path: str,
                  det_path: str,
+                 save_root: str,
                  match_distance: str = "iou",
                  match_threshold: float = 0.1,
                  match_algorithm: str = "hungarian",
-                 dataset: str = "nuscenes",
-                 save_root: str = "results/default"):
-
-        # python main.py val 0 iou 0.1 h false nuscenes results/000001
+                 dataset: str = "nuscenes"):
         """
         Loads the initial Kalman tracker parameters.
-        :param data_path: the path to the dataset
+        :param data_cfg_path: the path to the dataset configuration file
         :param cfg_path: path to configuration file for Kalman filter covariance
                      matrices
         :param det_path: path to the json file with the detections
+        :param save_root: the path to which the results will be saved 
         :param match_distance: defines the mathcing distance used, either iou or
                         mahalanobis (Default: "iou")
         :param match_threshold: defines the matching threshold used in the 
@@ -46,8 +46,6 @@ class KalmanTracker(object):
         :param match_algorithm: defines the matching algorithm used
                         (Default: "hungarian")
         :param dataset: the used dataset (Default: "nuscenes")
-        :param save_root: the path to which the results will be saved 
-                        (Default: "results/default")
         """
         if (match_distance not in {"iou", "mahalanobis"}):
             raise ValueError("match_distance takes only values {'iou',"
@@ -55,14 +53,14 @@ class KalmanTracker(object):
         if (match_algorithm not in {"hungarian", "greedy", "hungarian_thres"}):
             raise ValueError("match_algorithm takes only values {'hungarian',"
                              "'greedy', 'hungarian_thres'}.")
-        self.data_path = data_path
+        self.data_cfg_path = data_cfg_path
         self.cfg_path = cfg_path
         self.det_path = det_path
         self.match_distance = match_distance
         self.match_threshold = match_threshold
         self.match_algorithm = match_algorithm
         self.dataset = dataset
-        self.save_root = os.path.join('./' + save_root)
+        self.save_root = save_root
 
     def track(self):
         """
@@ -95,24 +93,19 @@ class KalmanTracker(object):
             }
         }
         """
-        # create directory folder for the results
-        version = self.data_path.split("/")[-1]
-        data_root = self.data_path[:-len(version)-1]
-
-        save_dir = os.path.join(self.save_root, self.dataset + version)
-        output_path = os.path.join(
-            save_dir, 'results_tracking.json')
-        mkdir_if_missing(save_dir)
-
         detection_file = self.det_path
 
-        # nusc_dataset = NuScenesDataset("PATH TO NUSCENES CONFIG")
-        # version = nusc_dataset.version
-        # data_root = nusc_dataset.data_root
-        # save_dir = os.path.join(self.save_root, self.dataset + version)
-        # output_path = os.path.join(save_dir, 'results_tracking.json')
-        # mkdir_if_missing(save_dir)
-        # nusc = nusc_dataset.get_nuscenes_db()
+        # get dataset
+        nusc_dataset = NuScenesDataset(self.data_cfg_path)
+
+        # create directory folder for the results
+        version = nusc_dataset.version
+        data_root = nusc_dataset.data_root
+        save_dir = os.path.join(self.save_root + "/" + self.dataset)
+        print(save_dir)
+        output_path = os.path.join(
+            save_dir + '/results_tracking.json')
+        mkdir_if_missing(save_dir)
 
         # create a Database object for nuScenes
         nusc = NuScenes(version=version, dataroot=data_root, verbose=True)
@@ -229,6 +222,7 @@ class KalmanTracker(object):
 
         # finished tracking all scenes, write output data
         output_data = {'meta': meta, 'results': results}
+
         with open(output_path, 'w') as outfile:
             json.dump(output_data, outfile)
 
