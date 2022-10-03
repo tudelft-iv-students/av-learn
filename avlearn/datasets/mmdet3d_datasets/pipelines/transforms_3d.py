@@ -8,13 +8,9 @@ from mmcv import is_tuple_of
 from mmcv.utils import build_from_cfg
 
 from modules.detectors.mmdet3d.core import VoxelGenerator
-# from mmdet3d.core import VoxelGenerator
-from modules.detectors.mmdet3d.core.bbox import \
-    (CameraInstance3DBoxes, DepthInstance3DBoxes,
-     LiDARInstance3DBoxes, box_np_ops)
-# from mmdet3d.core.bbox import (CameraInstance3DBoxes, DepthInstance3DBoxes,
-#                                LiDARInstance3DBoxes, box_np_ops)
-from mmdet3d.datasets.pipelines.compose import Compose
+from modules.detectors.mmdet3d.core.bbox import (CameraInstance3DBoxes, DepthInstance3DBoxes,
+                                                 LiDARInstance3DBoxes, box_np_ops)
+from datasets.mmdet3d_datasets.pipelines.compose import Compose
 from mmdet.datasets.pipelines import RandomCrop, RandomFlip, Rotate
 from ..builder import OBJECTSAMPLERS, PIPELINES
 from .data_augment_utils import noise_per_object_v3_
@@ -1328,7 +1324,7 @@ class IndoorPatchPointSample(object):
                 flag2 = True
             else:
                 flag2 = np.sum(cur_sem_mask != self.ignore_index) / \
-                               len(cur_sem_mask) >= 0.7
+                    len(cur_sem_mask) >= 0.7
 
             if flag1 and flag2:
                 break
@@ -1504,7 +1500,7 @@ class VoxelBasedPointSampler(object):
                 sampler._max_voxels - voxels.shape[0], sampler._max_num_points,
                 point_dim
             ],
-                                      dtype=points.dtype)
+                dtype=points.dtype)
             padding_points[:] = voxels[0]
             sample_points = np.concatenate([voxels, padding_points], axis=0)
         else:

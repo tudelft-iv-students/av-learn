@@ -8,10 +8,7 @@ import pyquaternion
 from nuscenes.utils.data_classes import Box as NuScenesBox
 
 from modules.detectors.mmdet3d.core import show_result
-# from ..core import show_result
-from modules.detectors.mmdet3d.core.bbox import \
-    Box3DMode, Coord3DMode, LiDARInstance3DBoxes
-# from ..core.bbox import Box3DMode, Coord3DMode, LiDARInstance3DBoxes
+from modules.detectors.mmdet3d.core.bbox import Box3DMode, Coord3DMode, LiDARInstance3DBoxes
 from .builder import DATASETS
 from .custom_3d import Custom3DDataset
 from .pipelines import Compose
@@ -658,3 +655,10 @@ def lidar_nusc_box_to_global(info,
         box.translate(np.array(info['ego2global_translation']))
         box_list.append(box)
     return box_list
+
+
+def get_nuscenes_db(self):
+    from nuscenes import NuScenes
+
+    return NuScenes(
+        version=self.version, dataroot=self.data_root, verbose=False)

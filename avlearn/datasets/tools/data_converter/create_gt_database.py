@@ -9,8 +9,8 @@ from mmcv.ops import roi_align
 from pycocotools import mask as maskUtils
 from pycocotools.coco import COCO
 
-from mmdet3d.core.bbox import box_np_ops as box_np_ops
-from mmdet3d.datasets import build_dataset
+from avlearn.modules.detectors.mmdet3d.core.bbox import box_np_ops as box_np_ops
+from avlearn.datasets.mmdet3d_datasets import build_dataset
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 
 

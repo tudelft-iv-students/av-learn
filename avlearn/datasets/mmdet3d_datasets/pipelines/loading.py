@@ -3,7 +3,6 @@ import mmcv
 import numpy as np
 
 from modules.detectors.mmdet3d.core.points import BasePoints, get_points_type
-# from mmdet3d.core.points import BasePoints, get_points_type
 from mmdet.datasets.pipelines import LoadAnnotations, LoadImageFromFile
 from ..builder import PIPELINES
 
@@ -548,7 +547,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Private function to load 3D bounding box annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing loaded 3D bounding box annotations.
@@ -561,7 +560,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Private function to load 2.5D bounding box annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing loaded 2.5D bounding box annotations.
@@ -574,7 +573,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Private function to load label annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing loaded label annotations.
@@ -586,7 +585,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Private function to load label annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing loaded label annotations.
@@ -598,7 +597,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Private function to load 3D mask annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing loaded 3D mask annotations.
@@ -623,7 +622,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Private function to load 3D semantic segmentation annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing the semantic segmentation annotations.
@@ -650,7 +649,7 @@ class LoadAnnotations3D(LoadAnnotations):
         """Call function to load multiple types annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet3d.CustomDataset`.
+            results (dict): Result dict from :obj:`modules.detectors.mmdet3d.CustomDataset`.
 
         Returns:
             dict: The dict containing loaded 3D bounding box, label, mask and

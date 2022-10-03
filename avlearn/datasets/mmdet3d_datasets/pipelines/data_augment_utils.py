@@ -6,7 +6,6 @@ import numpy as np
 from numba.core.errors import NumbaPerformanceWarning
 
 from modules.detectors.mmdet3d.core.bbox import box_np_ops
-# from mmdet3d.core.bbox import box_np_ops
 
 warnings.filterwarnings('ignore', category=NumbaPerformanceWarning)
 

@@ -3,9 +3,7 @@ import numpy as np
 from mmcv.parallel import DataContainer as DC
 
 from modules.detectors.mmdet3d.core.bbox import BaseInstance3DBoxes
-# from mmdet3d.core.bbox import BaseInstance3DBoxes
 from modules.detectors.mmdet3d.core.points import BasePoints
-# from mmdet3d.core.points import BasePoints
 from mmdet.datasets.pipelines import to_tensor
 from ..builder import PIPELINES
 
@@ -248,7 +246,7 @@ class DefaultFormatBundle3D(DefaultFormatBundle):
                     results['gt_labels'] = np.array([
                         self.class_names.index(n) for n in results['gt_names']
                     ],
-                                                    dtype=np.int64)
+                        dtype=np.int64)
                 # we still assume one pipeline for one frame LiDAR
                 # thus, the 3D name is list[string]
                 if 'gt_names_3d' in results:
@@ -256,7 +254,7 @@ class DefaultFormatBundle3D(DefaultFormatBundle):
                         self.class_names.index(n)
                         for n in results['gt_names_3d']
                     ],
-                                                       dtype=np.int64)
+                        dtype=np.int64)
         results = super(DefaultFormatBundle3D, self).__call__(results)
         return results
 

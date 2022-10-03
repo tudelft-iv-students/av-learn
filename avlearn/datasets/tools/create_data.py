@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from os import path as osp
 
-from tools.data_converter import nuscenes_converter as nuscenes_converter
-from tools.data_converter.create_gt_database import create_groundtruth_database
+from avlearn.datasets.tools.data_converter import nuscenes_converter as nuscenes_converter
+from avlearn.datasets.tools.data_converter.create_gt_database import create_groundtruth_database
 
 
 def nuscenes_data_prep(root_path,

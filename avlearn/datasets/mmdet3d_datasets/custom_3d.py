@@ -8,7 +8,6 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from modules.detectors.mmdet3d.core.bbox import get_box_type
-# from ..core.bbox import get_box_type
 from .builder import DATASETS
 from .pipelines import Compose
 from .utils import extract_result_dict, get_loading_pipeline
@@ -328,7 +327,7 @@ class Custom3DDataset(Dataset):
         Returns:
             dict: Evaluation results.
         """
-        from mmdet3d.core.evaluation import indoor_eval
+        from modules.detectors.mmdet3d.core.evaluation import indoor_eval
         assert isinstance(
             results, list), f'Expect results to be list, got {type(results)}.'
         assert len(results) > 0, 'Expect length of results > 0.'
