@@ -53,6 +53,6 @@ class DepthPoints(BasePoints):
             :obj:`BasePoints`: The converted point of the same type
                 in the `dst` mode.
         """
-        from mmdet3d.core.bbox import Coord3DMode
+        from modules.detectors.mmdet3d.core.bbox import Coord3DMode
         return Coord3DMode.convert_point(
             point=self, src=Coord3DMode.DEPTH, dst=dst, rt_mat=rt_mat)

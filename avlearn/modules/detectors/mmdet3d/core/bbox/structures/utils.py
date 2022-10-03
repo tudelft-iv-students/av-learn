@@ -4,7 +4,7 @@ from logging import warning
 import numpy as np
 import torch
 
-from mmdet3d.core.utils import array_converter
+from modules.detectors.mmdet3d.core.utils import array_converter
 
 
 @array_converter(apply_to=('val', ))
@@ -278,10 +278,10 @@ def mono_cam_box2vis(cam_box):
     yaw = cam_box.yaw
     feats = cam_box.tensor[:, 7:]
     # rotate along x-axis for np.pi / 2
-    # see also here: https://github.com/open-mmlab/mmdetection3d/blob/master/mmdet3d/datasets/nuscenes_mono_dataset.py#L557  # noqa
+    # see also here: https://github.com/open-mmlab/mmdetection3d/blob/master/modules.detectors.mmdet3d/datasets/nuscenes_mono_dataset.py#L557  # noqa
     dim[:, [1, 2]] = dim[:, [2, 1]]
     # change local yaw to global yaw for visualization
-    # refer to https://github.com/open-mmlab/mmdetection3d/blob/master/mmdet3d/datasets/nuscenes_mono_dataset.py#L164-L166  # noqa
+    # refer to https://github.com/open-mmlab/mmdetection3d/blob/master/modules.detectors.mmdet3d/datasets/nuscenes_mono_dataset.py#L164-L166  # noqa
     yaw += torch.atan2(loc[:, 0], loc[:, 2])
     # convert yaw by (-yaw - np.pi / 2)
     # this is because mono 3D box class such as `NuScenesBox` has different

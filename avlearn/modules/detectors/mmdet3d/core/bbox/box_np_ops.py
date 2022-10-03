@@ -482,7 +482,7 @@ def rbbox2d_to_near_bbox(rbboxes):
 @numba.jit(nopython=True)
 def iou_jit(boxes, query_boxes, mode='iou', eps=0.0):
     """Calculate box iou. Note that jit version runs ~10x faster than the
-    box_overlaps function in mmdet3d.core.evaluation.
+    box_overlaps function in modules.detectors.mmdet3d.core.evaluation.
 
     Note:
         This function is for counterclockwise boxes.
@@ -780,12 +780,12 @@ def boxes3d_to_corners3d_lidar(boxes3d, bottom_center=True):
         x_size / 2., -x_size / 2., -x_size / 2., x_size / 2., x_size / 2.,
         -x_size / 2., -x_size / 2., x_size / 2.
     ],
-                         dtype=np.float32).T
+        dtype=np.float32).T
     y_corners = np.array([
         -y_size / 2., -y_size / 2., y_size / 2., y_size / 2., -y_size / 2.,
         -y_size / 2., y_size / 2., y_size / 2.
     ],
-                         dtype=np.float32).T
+        dtype=np.float32).T
     if bottom_center:
         z_corners = np.zeros((boxes_num, 8), dtype=np.float32)
         z_corners[:, 4:8] = z_size.reshape(boxes_num, 1).repeat(
@@ -795,7 +795,7 @@ def boxes3d_to_corners3d_lidar(boxes3d, bottom_center=True):
             -z_size / 2., -z_size / 2., -z_size / 2., -z_size / 2.,
             z_size / 2., z_size / 2., z_size / 2., z_size / 2.
         ],
-                             dtype=np.float32).T
+            dtype=np.float32).T
 
     ry = boxes3d[:, 6]
     zeros, ones = np.zeros(
@@ -808,7 +808,7 @@ def boxes3d_to_corners3d_lidar(boxes3d, bottom_center=True):
 
     temp_corners = np.concatenate((x_corners.reshape(
         -1, 8, 1), y_corners.reshape(-1, 8, 1), z_corners.reshape(-1, 8, 1)),
-                                  axis=2)  # (N, 8, 3)
+        axis=2)  # (N, 8, 3)
     rotated_corners = np.matmul(temp_corners, R_list)  # (N, 8, 3)
     x_corners = rotated_corners[:, :, 0]
     y_corners = rotated_corners[:, :, 1]
