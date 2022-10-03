@@ -63,7 +63,7 @@ class Dataset(TorchDataset):
     def __len__(self):
         return len(self._dataset)
 
-    def __getitem__(self, index: int) -> list[int]:
+    def __getitem__(self, index: int) -> list:
         start = index - self.past_timesteps
         end   = index + self.future_timesteps + 1
         if start < 0 or end > len(self) - 1: 
