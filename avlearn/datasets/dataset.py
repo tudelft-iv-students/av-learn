@@ -63,12 +63,12 @@ class Dataset(TorchDataset):
     def __len__(self):
         return len(self._dataset)
 
-    def __getitem__(self, index: int) -> torch.Tensor:
-        # TODO: handle out of bounds indices
-        indices = range(index - self.past_timesteps,
-                        index + self.future_timesteps + 1)
-        print(indices)
-        return torch.Tensor([self._dataset[i] for i in indices])
+    def __getitem__(self, index: int) -> list[int]:
+        start = index - self.past_timesteps
+        end   = index + self.future_timesteps + 1
+        if start < 0 or end > len(self) - 1: 
+            return [] # index out of range
+        return [self._dataset[i] for i in range(start, end)]
 
     def __getattribute__(self, name: str) -> Any:
         """
@@ -85,7 +85,7 @@ class Dataset(TorchDataset):
                     '{type(self._dataset)}'"
                                      f"objects have no attribute '{name}'")
 
-    # @staticmethod
+    @staticmethod
     def _validate_timesteps_arg(func: Callable) -> Any:
         def wrapped(self, timesteps: int):
             if not isinstance(timesteps, int):
