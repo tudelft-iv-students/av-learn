@@ -2,7 +2,7 @@
 import mmcv
 import numpy as np
 
-from modules.detectors.mmdet3d.core.points import BasePoints, get_points_type
+from avlearn.modules.detectors.mmdet3d.core.points import BasePoints, get_points_type
 from mmdet.datasets.pipelines import LoadAnnotations, LoadImageFromFile
 from ..builder import PIPELINES
 

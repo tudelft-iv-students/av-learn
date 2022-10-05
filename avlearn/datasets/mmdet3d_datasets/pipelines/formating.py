@@ -2,8 +2,8 @@
 import numpy as np
 from mmcv.parallel import DataContainer as DC
 
-from modules.detectors.mmdet3d.core.bbox import BaseInstance3DBoxes
-from modules.detectors.mmdet3d.core.points import BasePoints
+from avlearn.modules.detectors.mmdet3d.core.bbox import BaseInstance3DBoxes
+from avlearn.modules.detectors.mmdet3d.core.points import BasePoints
 from mmdet.datasets.pipelines import to_tensor
 from ..builder import PIPELINES
 

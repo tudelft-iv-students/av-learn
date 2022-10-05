@@ -4,7 +4,7 @@ from logging import warning
 import numpy as np
 import torch
 
-from modules.detectors.mmdet3d.core.utils import array_converter
+from avlearn.modules.detectors.mmdet3d.core.utils import array_converter
 
 
 @array_converter(apply_to=('val', ))

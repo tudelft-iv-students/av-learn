@@ -6,8 +6,8 @@ import warnings
 import mmcv
 import numpy as np
 
-from modules.detectors.mmdet3d.core.bbox import box_np_ops
-from datasets.mmdet3d_datasets.pipelines import data_augment_utils
+from avlearn.modules.detectors.mmdet3d.core.bbox import box_np_ops
+from avlearn.datasets.mmdet3d_datasets.pipelines import data_augment_utils
 from ..builder import OBJECTSAMPLERS, PIPELINES
 
 
@@ -134,7 +134,7 @@ class DataBaseSampler(object):
             db_infos = mmcv.load(info_path)
 
         # filter database infos
-        from modules.detectors.mmdet3d.utils import get_root_logger
+        from avlearn.modules.detectors.mmdet3d.utils import get_root_logger
         logger = get_root_logger()
         for k, v in db_infos.items():
             logger.info(f'load {len(v)} {k} database infos')

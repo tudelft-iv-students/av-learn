@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from modules.detectors.mmdet3d.core.post_processing import nms_bev, nms_normal_bev
+from avlearn.modules.detectors.mmdet3d.core.post_processing import nms_bev, nms_normal_bev
 from ..bbox import bbox3d2result, bbox3d_mapping_back, xywhr2xyxyr
 
 

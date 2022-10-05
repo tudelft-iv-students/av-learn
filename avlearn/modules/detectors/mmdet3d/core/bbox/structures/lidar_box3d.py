@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-from modules.detectors.mmdet3d.core.points import BasePoints
+from avlearn.modules.detectors.mmdet3d.core.points import BasePoints
 from .base_box3d import BaseInstance3DBoxes
 from .utils import rotation_3d_in_axis
 

@@ -10,9 +10,9 @@ from lyft_dataset_sdk.lyftdataset import LyftDataset as Lyft
 from lyft_dataset_sdk.utils.data_classes import Box as LyftBox
 from pyquaternion import Quaternion
 
-from modules.detectors.mmdet3d.core.evaluation.lyft_eval import lyft_eval
-from modules.detectors.mmdet3d.core import show_result
-from modules.detectors.mmdet3d.core.bbox import Box3DMode, Coord3DMode, LiDARInstance3DBoxes
+from avlearn.modules.detectors.mmdet3d.core.evaluation.lyft_eval import lyft_eval
+from avlearn.modules.detectors.mmdet3d.core import show_result
+from avlearn.modules.detectors.mmdet3d.core.bbox import Box3DMode, Coord3DMode, LiDARInstance3DBoxes
 from .builder import DATASETS
 from .custom_3d import Custom3DDataset
 from .pipelines import Compose

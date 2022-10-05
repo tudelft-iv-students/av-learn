@@ -20,9 +20,6 @@ from .pipelines import (AffineResize, BackgroundPointsFilter, GlobalAlignment,
                         RandomShiftScale, RangeLimitedRandomCrop,
                         VoxelBasedPointSampler)
 # yapf: enable
-from .s3dis_dataset import S3DISDataset, S3DISSegDataset
-from .scannet_dataset import (ScanNetDataset, ScanNetInstanceSegDataset,
-                              ScanNetSegDataset)
 from .semantickitti_dataset import SemanticKITTIDataset
 from .sunrgbd_dataset import SUNRGBDDataset
 from .utils import get_loading_pipeline

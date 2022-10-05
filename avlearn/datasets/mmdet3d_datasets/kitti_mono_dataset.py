@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from mmcv.utils import print_log
 
-from modules.detectors.mmdet3d.core.bbox import Box3DMode, CameraInstance3DBoxes, points_cam2img
+from avlearn.modules.detectors.mmdet3d.core.bbox import Box3DMode, CameraInstance3DBoxes, points_cam2img
 from .builder import DATASETS
 from .nuscenes_mono_dataset import NuScenesMonoDataset
 
@@ -233,7 +233,7 @@ class KittiMonoDataset(NuScenesMonoDataset):
             dict[str, float]: Results of each evaluation metric.
         """
         result_files, tmp_dir = self.format_results(results, pklfile_prefix)
-        from modules.detectors.mmdet3d.core.evaluation import kitti_eval
+        from avlearn.modules.detectors.mmdet3d.core.evaluation import kitti_eval
         gt_annos = [info['annos'] for info in self.anno_infos]
 
         if isinstance(result_files, dict):

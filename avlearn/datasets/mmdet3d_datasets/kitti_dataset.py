@@ -9,9 +9,9 @@ import numpy as np
 import torch
 from mmcv.utils import print_log
 
-from modules.detectors.mmdet3d.core import show_multi_modality_result, show_result
-from modules.detectors.mmdet3d.core.bbox import (Box3DMode, CameraInstance3DBoxes, Coord3DMode,
-                                                 LiDARInstance3DBoxes, points_cam2img)
+from avlearn.modules.detectors.mmdet3d.core import show_multi_modality_result, show_result
+from avlearn.modules.detectors.mmdet3d.core.bbox import (Box3DMode, CameraInstance3DBoxes, Coord3DMode,
+                                                         LiDARInstance3DBoxes, points_cam2img)
 from .builder import DATASETS
 from .custom_3d import Custom3DDataset
 from .pipelines import Compose
@@ -356,7 +356,7 @@ class KittiDataset(Custom3DDataset):
             dict[str, float]: Results of each evaluation metric.
         """
         result_files, tmp_dir = self.format_results(results, pklfile_prefix)
-        from modules.detectors.mmdet3d.core.evaluation import kitti_eval
+        from avlearn.modules.detectors.mmdet3d.core.evaluation import kitti_eval
         gt_annos = [info['annos'] for info in self.data_infos]
 
         if isinstance(result_files, dict):

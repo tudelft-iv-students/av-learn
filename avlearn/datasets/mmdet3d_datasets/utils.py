@@ -2,14 +2,14 @@
 import mmcv
 
 # yapf: disable
-from datasets.mmdet3d_datasets.pipelines import (Collect3D, DefaultFormatBundle3D,
-                                                 LoadAnnotations3D,
-                                                 LoadImageFromFileMono3D,
-                                                 LoadMultiViewImageFromFiles,
-                                                 LoadPointsFromFile,
-                                                 LoadPointsFromMultiSweeps,
-                                                 MultiScaleFlipAug3D,
-                                                 PointSegClassMapping)
+from avlearn.datasets.mmdet3d_datasets.pipelines import (Collect3D, DefaultFormatBundle3D,
+                                                         LoadAnnotations3D,
+                                                         LoadImageFromFileMono3D,
+                                                         LoadMultiViewImageFromFiles,
+                                                         LoadPointsFromFile,
+                                                         LoadPointsFromMultiSweeps,
+                                                         MultiScaleFlipAug3D,
+                                                         PointSegClassMapping)
 from mmdet.datasets.pipelines import LoadImageFromFile, MultiScaleFlipAug
 # yapf: enable
 from .builder import PIPELINES

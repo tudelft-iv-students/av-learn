@@ -10,10 +10,10 @@ import pyquaternion
 import torch
 from nuscenes.utils.data_classes import Box as NuScenesBox
 
-from modules.detectors.mmdet3d.core import bbox3d2result, box3d_multiclass_nms, xywhr2xyxyr
+from avlearn.modules.detectors.mmdet3d.core import bbox3d2result, box3d_multiclass_nms, xywhr2xyxyr
 from mmdet.datasets import CocoDataset
-from modules.detectors.mmdet3d.core import show_multi_modality_result
-from modules.detectors.mmdet3d.core.bbox import CameraInstance3DBoxes, get_box_type
+from avlearn.modules.detectors.mmdet3d.core import show_multi_modality_result
+from avlearn.modules.detectors.mmdet3d.core.bbox import CameraInstance3DBoxes, get_box_type
 from .builder import DATASETS
 from .pipelines import Compose
 from .utils import extract_result_dict, get_loading_pipeline

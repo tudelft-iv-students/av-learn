@@ -143,8 +143,8 @@ def draw_depth_bbox3d_on_img(bboxes3d,
             Default: (0, 255, 0).
         thickness (int, optional): The thickness of bboxes. Default: 1.
     """
-    from modules.detectors.mmdet3d.core.bbox import points_cam2img
-    from modules.detectors.mmdet3d.models import apply_3d_transformation
+    from avlearn.modules.detectors.mmdet3d.core.bbox import points_cam2img
+    from avlearn.modules.detectors.mmdet3d.models import apply_3d_transformation
 
     img = raw_img.copy()
     img_metas = copy.deepcopy(img_metas)
@@ -184,7 +184,7 @@ def draw_camera_bbox3d_on_img(bboxes3d,
             Default: (0, 255, 0).
         thickness (int, optional): The thickness of bboxes. Default: 1.
     """
-    from modules.detectors.mmdet3d.core.bbox import points_cam2img
+    from avlearn.modules.detectors.mmdet3d.core.bbox import points_cam2img
 
     img = raw_img.copy()
     cam2img = copy.deepcopy(cam2img)
