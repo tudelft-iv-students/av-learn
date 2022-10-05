@@ -20,7 +20,6 @@ from .pipelines import (AffineResize, BackgroundPointsFilter, GlobalAlignment,
                         RandomShiftScale, RangeLimitedRandomCrop,
                         VoxelBasedPointSampler)
 # yapf: enable
-from .semantickitti_dataset import SemanticKITTIDataset
 from .sunrgbd_dataset import SUNRGBDDataset
 from .utils import get_loading_pipeline
 from .waymo_dataset import WaymoDataset
