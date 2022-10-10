@@ -2,7 +2,7 @@
 import torch
 from torch import nn as nn
 
-from mmdet3d.core.bbox import points_cam2img
+from avlearn.modules.detectors.mmdet3d.core.bbox import points_cam2img
 from ..builder import FUSION_LAYERS
 from . import apply_3d_transformation, bbox_2d_transform, coord_2d_transform
 

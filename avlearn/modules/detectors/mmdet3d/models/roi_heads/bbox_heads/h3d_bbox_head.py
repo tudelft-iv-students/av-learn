@@ -5,11 +5,11 @@ from mmcv.runner import BaseModule
 from torch import nn as nn
 from torch.nn import functional as F
 
-from mmdet3d.core.bbox import DepthInstance3DBoxes
-from mmdet3d.core.post_processing import aligned_3d_nms
-from mmdet3d.models.builder import HEADS, build_loss
-from mmdet3d.models.losses import chamfer_distance
-from mmdet3d.ops import build_sa_module
+from avlearn.modules.detectors.mmdet3d.core.bbox import DepthInstance3DBoxes
+from avlearn.modules.detectors.mmdet3d.core.post_processing import aligned_3d_nms
+from avlearn.modules.detectors.mmdet3d.models.builder import HEADS, build_loss
+from avlearn.modules.detectors.mmdet3d.models.losses import chamfer_distance
+from avlearn.modules.detectors.mmdet3d.ops import build_sa_module
 from mmdet.core import build_bbox_coder, multi_apply
 
 
@@ -267,7 +267,7 @@ class H3DBboxHead(BaseModule):
         # aggregate primitive line features to rpn proposals
         line_feature = torch.cat((line_feature.new_zeros(
             (batch_size, 12, line_feature.shape[2])), line_feature),
-                                 dim=1)
+            dim=1)
         line_xyz, line_features, _ = self.line_center_matcher(
             line_center, line_feature, target_xyz=obj_line_center)
 
@@ -914,7 +914,7 @@ class H3DBboxHead(BaseModule):
 
         cues_match_mask = (torch.sum(
             cues_objectness_label.view(18, num_proposals), dim=0) >=
-                           1).float()
+            1).float()
 
         obj_surface_line_center = torch.cat(
             (obj_surface_center, obj_line_center), 1).squeeze(0)

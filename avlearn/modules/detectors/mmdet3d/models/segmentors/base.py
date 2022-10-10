@@ -7,7 +7,7 @@ import torch
 from mmcv.parallel import DataContainer as DC
 from mmcv.runner import auto_fp16
 
-from mmdet3d.core import show_seg_result
+from avlearn.modules.detectors.mmdet3d.core import show_seg_result
 from mmseg.models.segmentors import BaseSegmentor
 
 

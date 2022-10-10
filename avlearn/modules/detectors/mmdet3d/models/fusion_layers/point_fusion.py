@@ -5,8 +5,8 @@ from mmcv.runner import BaseModule
 from torch import nn as nn
 from torch.nn import functional as F
 
-from mmdet3d.core.bbox.structures import (get_proj_mat_by_coord_type,
-                                          points_cam2img)
+from avlearn.modules.detectors.mmdet3d.core.bbox.structures import (
+    get_proj_mat_by_coord_type, points_cam2img)
 from ..builder import FUSION_LAYERS
 from . import apply_3d_transformation
 

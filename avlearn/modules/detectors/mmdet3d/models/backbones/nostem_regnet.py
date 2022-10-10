@@ -37,7 +37,7 @@ class NoStemRegNet(RegNet):
             in resblocks to let them behave as identity.
 
     Example:
-        >>> from mmdet3d.models import NoStemRegNet
+        >>> from avlearn.modules.detectors.mmdet3d.models import NoStemRegNet
         >>> import torch
         >>> self = NoStemRegNet(
                 arch=dict(

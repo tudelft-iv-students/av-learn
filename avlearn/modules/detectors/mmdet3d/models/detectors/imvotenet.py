@@ -4,8 +4,8 @@ import warnings
 import numpy as np
 import torch
 
-from mmdet3d.core import bbox3d2result, merge_aug_bboxes_3d
-from mmdet3d.models.utils import MLP
+from avlearn.modules.detectors.mmdet3d.core import bbox3d2result, merge_aug_bboxes_3d
+from avlearn.modules.detectors.mmdet3d.models.utils import MLP
 from .. import builder
 from ..builder import DETECTORS
 from .base import Base3DDetector
@@ -567,8 +567,8 @@ class ImVoteNet(Base3DDetector):
                     img=img[0], img_metas=img_metas[0], **kwargs)
             else:
                 assert img[0].size(0) == 1, 'aug test does not support ' \
-                                         'inference with batch size ' \
-                                         f'{img[0].size(0)}'
+                    'inference with batch size ' \
+                    f'{img[0].size(0)}'
                 # TODO: support test augmentation for predefined proposals
                 assert 'proposals' not in kwargs
                 return self.aug_test_img_only(

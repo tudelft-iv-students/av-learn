@@ -3,8 +3,8 @@ import numpy as np
 import torch
 from mmcv.runner import force_fp32
 
-from mmdet3d.core import limit_period, xywhr2xyxyr
-from mmdet3d.core.post_processing import nms_bev, nms_normal_bev
+from avlearn.modules.detectors.mmdet3d.core import limit_period, xywhr2xyxyr
+from avlearn.modules.detectors.mmdet3d.core.post_processing import nms_bev, nms_normal_bev
 from ..builder import HEADS
 from .anchor3d_head import Anchor3DHead
 

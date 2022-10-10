@@ -3,7 +3,7 @@ from functools import partial
 
 import torch
 
-from mmdet3d.core.points import get_points_type
+from avlearn.modules.detectors.mmdet3d.core.points import get_points_type
 
 
 def apply_3d_transformation(pcd, coord_type, img_meta, reverse=False):

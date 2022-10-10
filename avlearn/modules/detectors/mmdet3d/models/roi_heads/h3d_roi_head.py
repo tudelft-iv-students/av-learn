@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet3d.core.bbox import bbox3d2result
+from avlearn.modules.detectors.mmdet3d.core.bbox import bbox3d2result
 from ..builder import HEADS, build_head
 from .base_3droi_head import Base3DRoIHead
 

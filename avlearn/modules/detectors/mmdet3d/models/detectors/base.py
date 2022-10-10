@@ -6,7 +6,7 @@ import torch
 from mmcv.parallel import DataContainer as DC
 from mmcv.runner import auto_fp16
 
-from mmdet3d.core import Box3DMode, Coord3DMode, show_result
+from avlearn.modules.detectors.mmdet3d.core import Box3DMode, Coord3DMode, show_result
 from mmdet.models.detectors import BaseDetector
 
 

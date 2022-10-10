@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from mmcv.cnn import ConvModule, normal_init
 
-from mmdet3d.ops.spconv import IS_SPCONV2_AVAILABLE
+from avlearn.modules.detectors.mmdet3d.ops.spconv import IS_SPCONV2_AVAILABLE
 
 if IS_SPCONV2_AVAILABLE:
     from spconv.pytorch import (SparseConvTensor, SparseMaxPool3d,
@@ -14,11 +14,11 @@ else:
 from mmcv.runner import BaseModule
 from torch import nn as nn
 
-from mmdet3d.core.bbox.structures import (LiDARInstance3DBoxes,
-                                          rotation_3d_in_axis, xywhr2xyxyr)
-from mmdet3d.core.post_processing import nms_bev, nms_normal_bev
-from mmdet3d.models.builder import HEADS, build_loss
-from mmdet3d.ops import make_sparse_convmodule
+from avlearn.modules.detectors.mmdet3d.core.bbox.structures import (
+    LiDARInstance3DBoxes, rotation_3d_in_axis, xywhr2xyxyr)
+from avlearn.modules.detectors.mmdet3d.core.post_processing import nms_bev, nms_normal_bev
+from avlearn.modules.detectors.mmdet3d.models.builder import HEADS, build_loss
+from avlearn.modules.detectors.mmdet3d.ops import make_sparse_convmodule
 from mmdet.core import build_bbox_coder, multi_apply
 
 

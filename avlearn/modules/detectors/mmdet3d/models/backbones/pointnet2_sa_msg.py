@@ -4,7 +4,7 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import auto_fp16
 from torch import nn as nn
 
-from mmdet3d.ops import build_sa_module
+from avlearn.modules.detectors.mmdet3d.ops import build_sa_module
 from ..builder import BACKBONES
 from .base_pointnet import BasePointNet
 

@@ -6,8 +6,8 @@ from mmcv.runner import force_fp32
 from torch import nn as nn
 from torch.nn import functional as F
 
-from mmdet3d.core import box3d_multiclass_nms, xywhr2xyxyr
-from mmdet3d.core.bbox import points_cam2img, points_img2cam
+from avlearn.modules.detectors.mmdet3d.core import box3d_multiclass_nms, xywhr2xyxyr
+from avlearn.modules.detectors.mmdet3d.core.bbox import points_cam2img, points_img2cam
 from mmdet.core import distance2bbox, multi_apply
 from ..builder import HEADS, build_loss
 from .fcos_mono3d_head import FCOSMono3DHead

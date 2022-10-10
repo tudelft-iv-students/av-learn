@@ -6,11 +6,11 @@ from mmcv.cnn import ConvModule, build_conv_layer
 from mmcv.runner import BaseModule, force_fp32
 from torch import nn
 
-from mmdet3d.core import (circle_nms, draw_heatmap_gaussian, gaussian_radius,
-                          xywhr2xyxyr)
-from mmdet3d.core.post_processing import nms_bev
-from mmdet3d.models import builder
-from mmdet3d.models.utils import clip_sigmoid
+from avlearn.modules.detectors.mmdet3d.core import (
+    circle_nms, draw_heatmap_gaussian, gaussian_radius, xywhr2xyxyr)
+from avlearn.modules.detectors.mmdet3d.core.post_processing import nms_bev
+from avlearn.modules.detectors.mmdet3d.models import builder
+from avlearn.modules.detectors.mmdet3d.models.utils import clip_sigmoid
 from mmdet.core import build_bbox_coder, multi_apply
 from ..builder import HEADS, build_loss
 

@@ -4,7 +4,7 @@ from mmcv.ops import Voxelization
 from mmcv.runner import force_fp32
 from torch.nn import functional as F
 
-from mmdet3d.core import bbox3d2result, merge_aug_bboxes_3d
+from avlearn.modules.detectors.mmdet3d.core import bbox3d2result, merge_aug_bboxes_3d
 from .. import builder
 from ..builder import DETECTORS
 from .single_stage import SingleStage3DDetector

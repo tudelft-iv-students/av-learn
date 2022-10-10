@@ -3,8 +3,8 @@ import torch
 from mmcv import ops
 from torch import nn as nn
 
-from mmdet3d.core.bbox.structures import rotation_3d_in_axis
-from mmdet3d.models.builder import ROI_EXTRACTORS
+from avlearn.modules.detectors.mmdet3d.core.bbox.structures import rotation_3d_in_axis
+from avlearn.modules.detectors.mmdet3d.models.builder import ROI_EXTRACTORS
 
 
 @ROI_EXTRACTORS.register_module()

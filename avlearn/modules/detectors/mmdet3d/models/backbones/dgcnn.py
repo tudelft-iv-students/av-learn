@@ -2,7 +2,7 @@
 from mmcv.runner import BaseModule, auto_fp16
 from torch import nn as nn
 
-from mmdet3d.ops import DGCNNFAModule, DGCNNGFModule
+from avlearn.modules.detectors.mmdet3d.ops import DGCNNFAModule, DGCNNGFModule
 from ..builder import BACKBONES
 
 

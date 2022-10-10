@@ -2,7 +2,7 @@
 import torch
 from torch import nn as nn
 
-from mmdet3d.ops import PAConv, PAConvCUDA
+from avlearn.modules.detectors.mmdet3d.ops import PAConv, PAConvCUDA
 from mmdet.models.losses.utils import weight_reduce_loss
 from ..builder import LOSSES
 

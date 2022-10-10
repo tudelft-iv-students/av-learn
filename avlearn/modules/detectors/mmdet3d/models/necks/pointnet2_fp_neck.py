@@ -2,7 +2,7 @@
 from mmcv.runner import BaseModule
 from torch import nn as nn
 
-from mmdet3d.ops import PointFPModule
+from avlearn.modules.detectors.mmdet3d.ops import PointFPModule
 from ..builder import NECKS
 
 

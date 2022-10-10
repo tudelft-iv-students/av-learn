@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.cnn.bricks import ConvModule
 
-from mmdet3d.ops import DGCNNFPModule
+from avlearn.modules.detectors.mmdet3d.ops import DGCNNFPModule
 from ..builder import HEADS
 from .decode_head import Base3DDecodeHead
 

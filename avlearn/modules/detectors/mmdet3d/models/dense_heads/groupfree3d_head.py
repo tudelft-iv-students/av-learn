@@ -13,7 +13,7 @@ from mmcv.runner import BaseModule, force_fp32
 from torch import nn as nn
 from torch.nn import functional as F
 
-from mmdet3d.core.post_processing import aligned_3d_nms
+from avlearn.modules.detectors.mmdet3d.core.post_processing import aligned_3d_nms
 from mmdet.core import build_bbox_coder, multi_apply
 from ..builder import HEADS, build_loss
 from .base_conv_bbox_head import BaseConvBboxHead
@@ -185,7 +185,7 @@ class GroupFree3DHead(BaseModule):
             ]
         else:
             assert isinstance(transformerlayers, list) and \
-                   len(transformerlayers) == num_decoder_layers
+                len(transformerlayers) == num_decoder_layers
         self.decoder_layers = nn.ModuleList()
         for i in range(self.num_decoder_layers):
             self.decoder_layers.append(

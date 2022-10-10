@@ -4,7 +4,7 @@ from mmcv import is_tuple_of
 from mmcv.cnn import ConvModule
 from torch import nn as nn
 
-from mmdet3d.models.builder import build_loss
+from avlearn.modules.detectors.mmdet3d.models.builder import build_loss
 
 
 class VoteModule(nn.Module):

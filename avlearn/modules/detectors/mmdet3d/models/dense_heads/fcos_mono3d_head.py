@@ -7,8 +7,8 @@ from mmcv.cnn import Scale, normal_init
 from mmcv.runner import force_fp32
 from torch import nn as nn
 
-from mmdet3d.core import (box3d_multiclass_nms, limit_period, points_img2cam,
-                          xywhr2xyxyr)
+from avlearn.modules.detectors.mmdet3d.core import (
+    box3d_multiclass_nms, limit_period, points_img2cam, xywhr2xyxyr)
 from mmdet.core import multi_apply
 from mmdet.core.bbox.builder import build_bbox_coder
 from ..builder import HEADS, build_loss
@@ -859,13 +859,13 @@ class FCOSMono3DHead(AnchorFreeMono3DHead):
             gt_bboxes_3d = gt_bboxes_3d.tensor.to(gt_bboxes.device)
         if num_gts == 0:
             return gt_labels.new_full((num_points,), self.background_label), \
-                   gt_bboxes.new_zeros((num_points, 4)), \
-                   gt_labels_3d.new_full(
-                       (num_points,), self.background_label), \
-                   gt_bboxes_3d.new_zeros((num_points, self.bbox_code_size)), \
-                   gt_bboxes_3d.new_zeros((num_points,)), \
-                   attr_labels.new_full(
-                       (num_points,), self.attr_background_label)
+                gt_bboxes.new_zeros((num_points, 4)), \
+                gt_labels_3d.new_full(
+                (num_points,), self.background_label), \
+                gt_bboxes_3d.new_zeros((num_points, self.bbox_code_size)), \
+                gt_bboxes_3d.new_zeros((num_points,)), \
+                attr_labels.new_full(
+                (num_points,), self.attr_background_label)
 
         # change orientation to local yaw
         gt_bboxes_3d[..., 6] = -torch.atan2(

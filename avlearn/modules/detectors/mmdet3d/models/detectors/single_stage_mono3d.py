@@ -7,8 +7,8 @@ import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
 
-from mmdet3d.core import (CameraInstance3DBoxes, bbox3d2result,
-                          show_multi_modality_result)
+from avlearn.modules.detectors.mmdet3d.core import (
+    CameraInstance3DBoxes, bbox3d2result, show_multi_modality_result)
 from mmdet.models.detectors import SingleStageDetector
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 

@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from mmdet3d.core import bbox3d2result, build_prior_generator
-from mmdet3d.models.fusion_layers.point_fusion import point_sample
+from avlearn.modules.detectors.mmdet3d.core import bbox3d2result, build_prior_generator
+from avlearn.modules.detectors.mmdet3d.models.fusion_layers.point_fusion import point_sample
 from mmdet.models.detectors import BaseDetector
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 

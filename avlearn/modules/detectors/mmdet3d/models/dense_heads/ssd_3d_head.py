@@ -4,9 +4,8 @@ from mmcv.ops.nms import batched_nms
 from mmcv.runner import force_fp32
 from torch.nn import functional as F
 
-from mmdet3d.core.bbox.structures import (DepthInstance3DBoxes,
-                                          LiDARInstance3DBoxes,
-                                          rotation_3d_in_axis)
+from avlearn.modules.detectors.mmdet3d.core.bbox.structures import (
+    DepthInstance3DBoxes, LiDARInstance3DBoxes, rotation_3d_in_axis)
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from .vote_head import VoteHead

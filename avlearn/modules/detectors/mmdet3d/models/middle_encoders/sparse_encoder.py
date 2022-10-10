@@ -4,8 +4,8 @@ from mmcv.ops import points_in_boxes_all, three_interpolate, three_nn
 from mmcv.runner import auto_fp16
 from torch import nn as nn
 
-from mmdet3d.ops import SparseBasicBlock, make_sparse_convmodule
-from mmdet3d.ops.spconv import IS_SPCONV2_AVAILABLE
+from avlearn.modules.detectors.mmdet3d.ops import SparseBasicBlock, make_sparse_convmodule
+from avlearn.modules.detectors.mmdet3d.ops.spconv import IS_SPCONV2_AVAILABLE
 from mmdet.models.losses import sigmoid_focal_loss, smooth_l1_loss
 from ..builder import MIDDLE_ENCODERS
 

@@ -9,8 +9,8 @@ from mmcv.parallel import DataContainer as DC
 from mmcv.runner import force_fp32
 from torch.nn import functional as F
 
-from mmdet3d.core import (Box3DMode, Coord3DMode, bbox3d2result,
-                          merge_aug_bboxes_3d, show_result)
+from avlearn.modules.detectors.mmdet3d.core import (
+    Box3DMode, Coord3DMode, bbox3d2result, merge_aug_bboxes_3d, show_result)
 from mmdet.core import multi_apply
 from .. import builder
 from ..builder import DETECTORS

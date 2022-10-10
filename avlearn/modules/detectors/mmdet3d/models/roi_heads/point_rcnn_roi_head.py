@@ -2,8 +2,8 @@
 import torch
 from torch.nn import functional as F
 
-from mmdet3d.core import AssignResult
-from mmdet3d.core.bbox import bbox3d2result, bbox3d2roi
+from avlearn.modules.detectors.mmdet3d.core import AssignResult
+from avlearn.modules.detectors.mmdet3d.core.bbox import bbox3d2result, bbox3d2roi
 from mmdet.core import build_assigner, build_sampler
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_3droi_head import Base3DRoIHead

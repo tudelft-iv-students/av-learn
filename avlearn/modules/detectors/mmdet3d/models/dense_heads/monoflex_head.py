@@ -3,10 +3,10 @@ import torch
 from mmcv.cnn import xavier_init
 from torch import nn as nn
 
-from mmdet3d.core.utils import get_ellip_gaussian_2D
-from mmdet3d.models.model_utils import EdgeFusionModule
-from mmdet3d.models.utils import (filter_outside_objs, get_edge_indices,
-                                  get_keypoints, handle_proj_objs)
+from avlearn.modules.detectors.mmdet3d.core.utils import get_ellip_gaussian_2D
+from avlearn.modules.detectors.mmdet3d.models.model_utils import EdgeFusionModule
+from avlearn.modules.detectors.mmdet3d.models.utils import (
+    filter_outside_objs, get_edge_indices, get_keypoints, handle_proj_objs)
 from mmdet.core import multi_apply
 from mmdet.core.bbox.builder import build_bbox_coder
 from mmdet.models.utils import gaussian_radius, gen_gaussian_target

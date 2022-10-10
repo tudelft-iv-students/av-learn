@@ -3,10 +3,11 @@ import torch
 from mmcv.runner import BaseModule, force_fp32
 from torch import nn as nn
 
-from mmdet3d.core import xywhr2xyxyr
-from mmdet3d.core.bbox.structures import (DepthInstance3DBoxes,
-                                          LiDARInstance3DBoxes)
-from mmdet3d.core.post_processing import nms_bev, nms_normal_bev
+from avlearn.modules.detectors.mmdet3d.core import xywhr2xyxyr
+from avlearn.modules.detectors.mmdet3d.core.bbox.structures import (
+    DepthInstance3DBoxes,
+    LiDARInstance3DBoxes)
+from avlearn.modules.detectors.mmdet3d.core.post_processing import nms_bev, nms_normal_bev
 from mmdet.core import build_bbox_coder, multi_apply
 from ..builder import HEADS, build_loss
 

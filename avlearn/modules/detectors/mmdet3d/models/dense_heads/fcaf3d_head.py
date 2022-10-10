@@ -12,8 +12,8 @@ from mmcv.ops import nms3d, nms3d_normal
 from mmcv.runner.base_module import BaseModule
 from torch import nn
 
-from mmdet3d.core.bbox.structures import rotation_3d_in_axis
-from mmdet3d.models import HEADS, build_loss
+from avlearn.modules.detectors.mmdet3d.core.bbox.structures import rotation_3d_in_axis
+from avlearn.modules.detectors.mmdet3d.models import HEADS, build_loss
 from mmdet.core import reduce_mean
 
 
