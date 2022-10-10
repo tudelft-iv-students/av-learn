@@ -1,12 +1,15 @@
-# This method is implemented on top of
+# This module is implemented on top of
 # https://github.com/eddyhkchiu/mahalanobis_3d_multi_object_tracking
 # and https://github.com/xinshuoweng/AB3DMOT tracking open source code bases.
 
 from __future__ import print_function
-import os.path
-import numpy as np
-import time
+
 import json
+import time
+from pathlib import Path
+
+import numpy as np
+from avlearn.datasets.dataset import NuScenesDataset
 from nuscenes import NuScenes
 from nuscenes.eval.common.data_classes import EvalBoxes
 from nuscenes.eval.detection.data_classes import DetectionBox
@@ -14,8 +17,7 @@ from pyquaternion import Quaternion
 from tqdm import tqdm
 
 from ab3d_mot_tracker import AB3DMOT
-from utils import mkdir_if_missing, NUSCENES_TRACKING_CLASSES
-from avlearn.datasets.dataset import NuScenesDataset
+from configs.nuscenes import NUSCENES_TRACKING_CLASSES
 
 
 class KalmanTracker(object):
@@ -101,11 +103,10 @@ class KalmanTracker(object):
         # create directory folder for the results
         version = nusc_dataset.version
         data_root = nusc_dataset.data_root
-        save_dir = os.path.join(self.save_root + "/" + self.dataset)
-        print(save_dir)
-        output_path = os.path.join(
-            save_dir + '/results_tracking.json')
-        mkdir_if_missing(save_dir)
+        save_dir = Path(self.save_root, self.dataset)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        print("Results saved in:", save_dir)
+        output_path = save_dir / "results_tracking.json"
 
         # create a Database object for nuScenes
         nusc = NuScenes(version=version, dataroot=data_root, verbose=True)

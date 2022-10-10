@@ -1,9 +1,10 @@
-# This method is based on the Kalman filter implementation by filterpy:
+# This module is based on the Kalman filter implementation by filterpy:
 # https://filterpy.readthedocs.io/en/latest/
+
+from copy import deepcopy
 
 import numpy as np
 import numpy.linalg as linalg
-from copy import deepcopy
 
 
 class KalmanFilter(object):

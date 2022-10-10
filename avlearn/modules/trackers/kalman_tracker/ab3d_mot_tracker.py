@@ -1,15 +1,17 @@
-# This method is implemented on top of
+# This module is implemented on top of
 # https://github.com/eddyhkchiu/mahalanobis_3d_multi_object_tracking
 # and https://github.com/xinshuoweng/AB3DMOT tracking open source code bases.
 
 from __future__ import print_function
+
 import copy
+
 import numpy as np
-from sklearn.utils.linear_assignment_ import linear_assignment
 from mmcv import Config
 
 from kalman_filter import KalmanFilter
-from utils import roty, diff_orientation_correction, greedy_match, iou3d
+from utils import (diff_orientation_correction, greedy_match, iou3d,
+                   linear_assignment, roty)
 
 
 class AB3DMOT(object):
@@ -81,7 +83,7 @@ class AB3DMOT(object):
             trk[:] = [pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6]]
             # if any of the predicted values is NaN append the tracker to
             # deletion list
-            if(np.any(np.isnan(pos))):
+            if (np.any(np.isnan(pos))):
                 to_del.append(t)
         trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
         # remove trackers that are no longer active
@@ -152,7 +154,7 @@ class AB3DMOT(object):
             d = trk.get_state()      # bbox location
             d = d[self.reorder_back]
 
-            if((trk.hits >= self.min_hits or self.frame_count <= self.min_hits)
+            if ((trk.hits >= self.min_hits or self.frame_count <= self.min_hits)
                and (trk.time_since_update < self.max_age)):
                 # +1 as MOT benchmark requires positive
                 ret.append(np.concatenate(
@@ -161,9 +163,9 @@ class AB3DMOT(object):
 
             i -= 1
             # remove inactive tracklet
-            if(trk.time_since_update >= self.max_age):
+            if (trk.time_since_update >= self.max_age):
                 self.trackers.pop(i)
-        if(len(ret) > 0):
+        if (len(ret) > 0):
             # x, y, z, theta, l, w, h, ID, score, confidence
             return np.concatenate(ret)
         return np.empty((0, 15 + 7))
@@ -300,7 +302,7 @@ class KalmanBoxTracker(object):
 
         # increase age by 1 frame
         self.age += 1
-        if(self.time_since_update > 0):
+        if (self.time_since_update > 0):
             self.hit_streak = 0
             self.still_first = False
         self.time_since_update += 1
@@ -343,7 +345,7 @@ def associate_detections(detections: np.ndarray,
     :returns: tuple of 3 lists containing matches, unmatched_detections and u
             nmatched_trackers
     """
-    if(len(trackers) == 0):
+    if (len(trackers) == 0):
         return np.empty((0, 2), dtype=int), np.arange(len(detections)), \
             np.empty((0, 8, 3), dtype=int)
     iou_matrix = np.zeros((len(detections), len(trackers)), dtype=np.float32)
@@ -351,9 +353,9 @@ def associate_detections(detections: np.ndarray,
         (len(detections), len(trackers)), dtype=np.float32)
 
     if use_mahalanobis:
-        assert(dets is not None)
-        assert(trks is not None)
-        assert(trks_S is not None)
+        assert (dets is not None)
+        assert (trks is not None)
+        assert (trks_S is not None)
 
     for d, det in enumerate(detections):
         for t, trk in enumerate(trackers):
@@ -392,7 +394,7 @@ def associate_detections(detections: np.ndarray,
     # use matched_indices to check for unmatched detections and trackers
     unmatched_detections = []
     for d, det in enumerate(detections):
-        if(d not in matched_indices[:, 0]):
+        if (d not in matched_indices[:, 0]):
             unmatched_detections.append(d)
     unmatched_trackers = []
     for t, trk in enumerate(trackers):
@@ -407,19 +409,20 @@ def associate_detections(detections: np.ndarray,
             if distance_matrix[m[0], m[1]] > mahalanobis_threshold:
                 match = False
         else:
-            if(iou_matrix[m[0], m[1]] < iou_threshold):
+            if (iou_matrix[m[0], m[1]] < iou_threshold):
                 match = False
         if not match:
             unmatched_detections.append(m[0])
             unmatched_trackers.append(m[1])
         else:
             matches.append(m.reshape(1, 2))
-    if(len(matches) == 0):
+    if (len(matches) == 0):
         matches = np.empty((0, 2), dtype=int)
     else:
         matches = np.concatenate(matches, axis=0)
 
-    return matches, np.array(unmatched_detections), np.array(unmatched_trackers)
+    return matches, np.array(unmatched_detections), np.array(
+        unmatched_trackers)
 
 
 def convert_3dbox_to_8corner(bbox3d_input: np.ndarray,
