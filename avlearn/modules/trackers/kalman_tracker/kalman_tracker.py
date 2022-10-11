@@ -33,7 +33,9 @@ class KalmanTracker(object):
                  match_distance: str = "iou",
                  match_threshold: float = 0.1,
                  match_algorithm: str = "hungarian",
-                 dataset: str = "nuscenes"):
+                 dataset: str = "nuscenes",
+                 max_age: int = 2,
+                 min_hits: int = 3):
         """
         Loads the initial Kalman tracker parameters.
         :param data_cfg_path: the path to the dataset configuration file
@@ -48,6 +50,10 @@ class KalmanTracker(object):
         :param match_algorithm: defines the matching algorithm used
                         (Default: "hungarian")
         :param dataset: the used dataset (Default: "nuscenes")
+        :param max_age: the maximum number frames allowed for a tracker to have 
+                        no matches before being deactivated
+        :param min_hits: the minimum number matches allowed for a tracker before 
+                    being activated
         """
         if (match_distance not in {"iou", "mahalanobis"}):
             raise ValueError("match_distance takes only values {'iou',"
@@ -63,6 +69,8 @@ class KalmanTracker(object):
         self.match_algorithm = match_algorithm
         self.dataset = dataset
         self.save_root = save_root
+        self.max_age = max_age
+        self.min_hits = min_hits
 
     def track(self):
         """
@@ -150,7 +158,9 @@ class KalmanTracker(object):
                 mot_trackers = {tracking_name: AB3DMOT(
                                 tracking_name=tracking_name,
                                 cfg_path=self.cfg_path,
-                                tracking_nuscenes=True)
+                                tracking_nuscenes=True,
+                                max_age=self.max_age,
+                                min_hits=self.min_hits)
                                 for tracking_name in NUSCENES_TRACKING_CLASSES}
 
                 # for all sample/keyframe tokens in the scene
