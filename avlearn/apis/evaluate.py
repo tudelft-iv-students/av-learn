@@ -3,7 +3,7 @@ AV-learn pipeline."""
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from nuscenes import NuScenes
 from nuscenes.eval.common.config import config_factory
@@ -31,6 +31,7 @@ class Evaluator:
                  output: Union[str, Path],
                  dataroot: Union[str, Path],
                  split: Union[str, Path],
+                 verbose: bool = True,
                  **kwargs: Any
                  ) -> None:
         """Initialize an Evaluator.
@@ -41,6 +42,21 @@ class Evaluator:
         :param output: Path to the directory to save results to.
         :param dataroot: Path to the data directory.
         :param split: The dataset split to evaluate on.
+        :param verbose: Whether to print to stdout.
+
+
+        Optional parameters for nuScenes dataset:
+        :param version (str): Which version of nuscenes to use 
+                              (Default: v1.0-trainval)
+        :param config_path (str | Path): Path to the configuration file for 
+                                         the evaluation. (Default: None)
+        :param plot_examples (int): How many example visualizations to write 
+                                    to disk. (Default: 10)
+        :param render_curves (bool): Whether to render curves to disk.
+                                     (Default: True)
+        :param render_classes (list): For which classes to render tracking 
+                                      results to disk. (Default: None -> all)
+
         """
 
         self.task = task
@@ -54,19 +70,19 @@ class Evaluator:
         if dataset == 'nuscenes':
             self.__init_nuscenes()
         else:
-            print("We currently only support the NuScenes dataset.")
-            raise NotImplementedError
+            raise NotImplementedError(
+                "We currently only support the NuScenes dataset.")
 
     def __init_nuscenes(self) -> None:
         """Initialize a NuScenes Evaluator."""
         if self.task == "detection":
             # Initialize NuScenes object
             nusc = NuScenes(
-                version=self.kwargs["version"],
-                verbose=self.kwargs["verbose"],
+                version=self.kwargs.get("version", 'v1.0-trainval'),
+                verbose=self.kwargs.get("verbose", True),
                 dataroot=self.dataroot)
 
-            if self.kwargs['config_path'] is None:
+            if self.kwargs.get('config_path', None) is None:
                 config = config_factory('detection_cvpr_2019')
             else:
                 with open(self.kwargs['config_path'], 'r') as f:
@@ -75,10 +91,10 @@ class Evaluator:
             self.evaluator = DetectionEval(
                 nusc, config=config, result_path=self.results,
                 eval_set=self.split, output_dir=self.output,
-                verbose=self.kwargs["verbose"])
+                verbose=self.kwargs.get("verbose", True))
 
         elif self.task == 'tracking':
-            if self.kwargs['config_path'] is None:
+            if self.kwargs.get('config_path', None) is None:
                 config = config_factory('tracking_nips_2019')
             else:
                 with open(self.kwargs['config_path'], 'r') as f:
@@ -86,9 +102,11 @@ class Evaluator:
 
             self.evaluator = TrackingEval(
                 config=config, result_path=self.results, eval_set=self.split,
-                output_dir=self.output, nusc_version=self.kwargs["version"],
-                nusc_dataroot=self.dataroot, verbose=self.kwargs["verbose"],
-                render_classes=self.kwargs['render_classes'])
+                output_dir=self.output, nusc_version=self.kwargs.get(
+                    "version", "v1.0-trainval"),
+                nusc_dataroot=self.dataroot, verbose=self.kwargs.get(
+                    "verbose", True),
+                render_classes=self.kwargs.get('render_classes', []))
 
         else:
             # TODO: Initialize evaluator for the prediction task
@@ -108,11 +126,11 @@ class Evaluator:
         """Evaluate on NuScenes."""
         if self.task == 'detection':
             return self.evaluator.main(
-                plot_examples=self.kwargs["plot_examples"],
-                render_curves=self.kwargs["render_curves"])
+                plot_examples=self.kwargs.get("plot_examples", 10),
+                render_curves=self.kwargs.get("render_curves", True))
         elif self.task == 'tracking':
             return self.evaluator.main(
-                render_curves=self.kwargs["render_curves"])
+                render_curves=self.kwargs.get("render_curves", True))
 
     def __eval_kitti(self) -> Dict[str, Any]:
         """Evaluate on KITTI."""
@@ -169,7 +187,7 @@ if __name__ == "__main__":
         '--version', type=str, default='v1.0-trainval',
         help='Which version of the dataset to evaluate on, e.g. v1.0-trainval')
     parser.add_argument(
-        '--config_path', type=str, default='',
+        '--config_path', type=str, default=None,
         help='Path to the configuration file for the evaluation.')
     parser.add_argument(
         '--plot_examples', type=int, default=10,
@@ -177,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument('--render_curves', type=int, default=1,
                         help='Whether to render curves to disk.')
     parser.add_argument(
-        '--render_classes', type=str, default='', nargs='+',
+        '--render_classes', type=str, default=None, nargs='+',
         help='For which classes to render tracking results to disk.')
     parser.add_argument('--verbose', type=int, default=1,
                         help='Whether to print to stdout.')
