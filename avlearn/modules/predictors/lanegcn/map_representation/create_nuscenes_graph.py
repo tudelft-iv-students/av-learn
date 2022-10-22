@@ -1,6 +1,10 @@
 """This module generated an XML graph for the centerlines of a nuScenes 
 map and a json file containing the hallucinated bounding boxes for the 
-corresponding lanes of the map."""
+corresponding lanes of the map.
+
+This implementation is inspired by bhayva01's nuscenes_to_argoverse repository
+https://github.com/bhavya01/nuscenes_to_argoverse. 
+"""
 import argparse
 import json
 import xml.etree.ElementTree as ET
