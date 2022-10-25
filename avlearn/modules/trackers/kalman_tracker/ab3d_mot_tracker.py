@@ -33,7 +33,7 @@ class AB3DMOT(object):
         :param max_age: the maximum number frames allowed for a tracker to have 
                         no matches before being deactivated
         :param min_hits: the minimum number matches allowed for a tracker before 
-                    being deactivated
+                    being activated
         :param tracking_name: predicted class for this sample_result, e.g. car,
                         pedestrian
         :param tracking nuscenes: determines whether the nuscenes dataset is 
@@ -342,8 +342,8 @@ def associate_detections(detections: np.ndarray,
                         hungarian algorithm (Default: 0.1)
     :param match_algorithm: efines the matching algorithm used
                         (Default: "hungarian")
-    :returns: tuple of 3 lists containing matches, unmatched_detections and u
-            nmatched_trackers
+    :returns: tuple of 3 lists containing matches, unmatched_detections and 
+            unmatched_trackers
     """
     if (len(trackers) == 0):
         return np.empty((0, 2), dtype=int), np.arange(len(detections)), \

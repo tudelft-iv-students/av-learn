@@ -73,7 +73,7 @@ class PredLoss(nn.Module):
 
         num_mods, num_preds = self.config["num_mods"], self.config["num_preds"]
 
-        # mask out elements that dont have a ground-truth label.
+        # mask out elements that don't have a ground-truth label.
         last = has_preds.float() + 0.1 * torch.arange(num_preds).float().to(
             has_preds.device
         ) / float(num_preds)
