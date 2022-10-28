@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from avlearn.datasets.dataset import NuScenesDataset
+from avlearn.datasets.detection.nuscenes_ds import NuScenesDataset
 from nuscenes import NuScenes
 from nuscenes.eval.common.data_classes import EvalBoxes
 from nuscenes.eval.detection.data_classes import DetectionBox

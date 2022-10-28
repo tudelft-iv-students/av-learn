@@ -2,14 +2,10 @@ import os
 from functools import reduce
 from typing import Any, Callable, Union
 
-import torch
-from torch.utils.data import Dataset as TorchDataset
-
 from mmcv import Config
-from avlearn.datasets.mmdet3d_datasets.builder import \
-    build_dataset as build_mmdet3d_dataset
-from avlearn.datasets.mmdet3d_datasets.nuscenes_dataset import \
-    NuScenesDataset as MMDET3D_NuScenesDataset
+from torch.utils.data import Dataset
+
+from mmdet3d_datasets.builder import build_dataset as build_mmdet3d_dataset
 
 
 def _rgetattr(obj, attr, *args):
@@ -21,7 +17,7 @@ def _rgetattr(obj, attr, *args):
     return reduce(_getattr, [obj] + attr.split('.'))
 
 
-class Dataset(TorchDataset):
+class DetectionDataset(Dataset):
     """
     Dataset wrapper class for generic mmdetection3d datasets.
     """
@@ -92,8 +88,9 @@ class Dataset(TorchDataset):
                 raise TypeError(
                     f"timesteps must be int, but got {type(timesteps)}")
             if not timesteps >= 0:
-                raise ValueError("Absolute value of 'timesteps' must be greater"
-                                 f"than or equal to 0, but is {abs(timesteps)}")
+                raise ValueError(
+                    "Absolute value of 'timesteps' must be greater"
+                    f"than or equal to 0, but is {abs(timesteps)}")
             return func(self, timesteps)
         return wrapped
 
@@ -130,27 +127,3 @@ class Dataset(TorchDataset):
         return per __getitem__ call.
         """
         self._future_timesteps = timesteps
-
-
-class NuScenesDataset(Dataset):
-    """
-    Dataset wrapper class for mmdetection3d NuScenesDataset.
-    """
-    # TODO: add default cfg filepath
-
-    def __init__(self, cfg: Union[str, Config] = "", mode: str = 'train',
-                 past_timesteps: int = 0, future_timesteps: int = 0) -> None:
-        """
-        :param cfg: Config dict or path to config file. 
-                    Config dict should at least contain the key "type".
-        :param mode: Whether the dataset contains training, test, 
-                     or validation data. Defaults to 'train'.
-        :param past_timesteps: The number of samples preceding <index> to 
-                               return per __getitem__ call. Defaults to 0.
-        :param future_timesteps: The number of samples following <index> to 
-                                 return per __getitem__ call. Defaults to 0.
-        """
-        super().__init__(cfg, mode, past_timesteps, future_timesteps)
-        if not isinstance(self._dataset, MMDET3D_NuScenesDataset):
-            raise TypeError("dataset must be mmdetection3d.NuScenesDataset, "
-                            f"but got {type(self._dataset)}")
