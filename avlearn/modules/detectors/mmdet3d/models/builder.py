@@ -11,7 +11,6 @@ from mmdet.models.builder import LOSSES as MMDET_LOSSES
 from mmdet.models.builder import NECKS as MMDET_NECKS
 from mmdet.models.builder import ROI_EXTRACTORS as MMDET_ROI_EXTRACTORS
 from mmdet.models.builder import SHARED_HEADS as MMDET_SHARED_HEADS
-from mmseg.models.builder import LOSSES as MMSEG_LOSSES
 
 MODELS = Registry('models', parent=MMCV_MODELS)
 
@@ -74,8 +73,6 @@ def build_loss(cfg):
         return LOSSES.build(cfg)
     elif cfg['type'] in MMDET_LOSSES._module_dict.keys():
         return MMDET_LOSSES.build(cfg)
-    else:
-        return MMSEG_LOSSES.build(cfg)
 
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):
