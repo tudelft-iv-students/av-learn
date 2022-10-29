@@ -1,4 +1,5 @@
 # <Copyright 2019, Argo AI, LLC. Released under the MIT license.>
+# https://github.com/argoai/argoverse-api/blob/master/argoverse/utils/manhattan_search.py
 
 """Fast search functions of nearest neighbor based on Manhattan distance."""
 
