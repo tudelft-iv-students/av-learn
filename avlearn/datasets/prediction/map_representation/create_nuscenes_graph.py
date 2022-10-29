@@ -1,26 +1,38 @@
-"""This module generated an XML graph for the centerlines of a nuScenes 
-map and a json file containing the hallucinated bounding boxes for the 
-corresponding lanes of the map.
+"""This module generates a graph for the centerlines of a nuScenes
+map and hallucinated bounding boxes for the corresponding lanes of the map, and
+saves them in JSON files.
 
 This implementation is inspired by bhayva01's nuscenes_to_argoverse repository
-https://github.com/bhavya01/nuscenes_to_argoverse. 
+https://github.com/bhavya01/nuscenes_to_argoverse.
 """
 import argparse
 import json
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import numpy as np
 from nuscenes.map_expansion import arcline_path_utils
 from nuscenes.map_expansion.map_api import NuScenesMap
 
-from utils import load_table
+
+def load_table(data: list) -> dict:
+    """Load a nuScenes table.
+
+    This method takes a list of nested dictionaries and returns a
+    dictionary using the inner tokens as keys.
+
+    :param data: A list of dictionaries.
+    """
+    table = {}
+    for record in data:
+        table[record["token"]] = record
+
+    return table
 
 
 def get_point_cloud_bbox(point_cloud: np.ndarray) -> list:
     """Calculate bounding box for `point_cloud`.
 
-    This method returns the minimum size xy axis-aligned bounding box of a 
+    This method returns the minimum size xy axis-aligned bounding box of a
     given set of 2D or 3D points.
 
     :param point_cloud: A point cloud of size (N,2) or (N,3).
@@ -62,46 +74,67 @@ def create_halluc_bboxes(nodes: dict, lanes: list, polygons: dict) -> dict:
     return halluc_bboxes
 
 
-def create_xml_graph(
-        nusc_map: NuScenesMap, root: ET.Element,
+def create_json_graph(
+        nusc_map: NuScenesMap,
         lanes: list, centerlines: dict,
-        discretization_resolution: float = 0.5) -> ET.ElementTree:
-    """Create XML graph for nuScenes centerlines.
+        discretization_resolution: float = 0.5) -> dict:
+    """Create a graph for nuScenes centerlines.
 
-    This method creates an XML graph for the centerlines of the nuScenes
-    dataset. The graph contains all of the lanes of the corresponding map, 
-    along with the nodes of the discretized centerlines. The XML may look 
+    This method creates a graph for the centerlines of the nuScenes
+    dataset. The graph contains all of the lanes of the corresponding map,
+    along with the nodes of the discretized centerlines. The JSON file may look
     like this:
 
-        <lane token="0073298b-b2f4-4f89-97cd-4241a1599831">
-            <node ref="1" />
-            <node ref="2" />
-            ...
-            <node ref="17" />
-            <tag k="predecessor" v="09a84e1d-17a3-40d7-a734-f426df3e2089" />
-            ...
-            <tag k="predecessor" v="5cf3ec09-477a-40d4-9c3a-03d610fad1b8" />
-        </lane>
-        <node id="1" x="486.91778944573264" y="812.8782745377198" />
-        <node id="2" x="487.1413230286224" y="813.3026182765033" />
-        ...
+        {
+            "lanes":{
+                "0073298b-b2f4-4f89-97cd-4241a1599831": {
+                    "token":"0073298b-b2f4-4f89-97cd-4241a1599831",
+                    "centerline_nodes":["1","2",...,"17"],
+                    "predecessors": [
+                        "09a84e1d-17a3-40d7-a734-f426df3e2089",
+                        ...
+                    ],
+                    "successors":[
+                        ...
+                    ]
+                },
+                "01a3b994-8aa9-450d-865a-ceb0666c90fa": {
+                    "token": "01a3b994-8aa9-450d-865a-ceb0666c90fa", 
+                    "centerline_nodes": [...]
+                    ...
+                }
+            },
+            "nodes": {
+                "1": {
+                    "id": 1, 
+                    "x": "486.91778944573264", 
+                    "y": "812.8782745377198"
+                }, 
+                "2": {
+                    ...
+                },
+                ...
+            }
+        }
 
     The ids of the nodes are arbitrary, since there are no official tokens.
 
     :param nusc_map: A NuScenesMap object.
-    :param root: An XML ETree to append nodes on.
     :param lanes: The lanes (lanes and lane connectors) of the nuScenes map.
-    :param centerlines: The centerlines (arcline paths) for the lanes of the 
+    :param centerlines: The centerlines (arcline paths) for the lanes of the
         nuScenes map.
     :param discretization_resolution: The discretization resolution of the
         parametric curves of the lanes.
     """
     global_node_id = 1
     present_nodes = {}
+    lanes_dict = {}
+    nodes_dict = {}
 
     for lane in lanes:
-        lane_node = ET.SubElement(root, "lane")
-        lane_node.set("token", lane["token"])
+        lanes_dict[lane["token"]] = {}
+        lanes_dict[lane["token"]]["token"] = lane["token"]
+        lanes_dict[lane["token"]]["centerline_nodes"] = []
 
         poses = arcline_path_utils.discretize_lane(
             centerlines[lane["token"]], discretization_resolution
@@ -110,40 +143,36 @@ def create_xml_graph(
         for pose in poses:
             currNode = (pose[0], pose[1])
             if currNode not in present_nodes:
-                node = ET.SubElement(root, "node")
-                node.set("id", str(global_node_id))
-                node.set("x", str(pose[0]))
-                node.set("y", str(pose[1]))
+                nodes_dict[global_node_id] = {}
+                nodes_dict[global_node_id]["id"] = global_node_id
+                nodes_dict[global_node_id]["x"] = str(pose[0])
+                nodes_dict[global_node_id]["y"] = str(pose[1])
 
                 present_nodes[currNode] = str(global_node_id)
                 global_node_id += 1
 
-            lane_subnode = ET.SubElement(lane_node, "node")
-            lane_subnode.set("ref", present_nodes[currNode])
+            lanes_dict[lane["token"]]["centerline_nodes"].append(
+                present_nodes[currNode])
 
-        predecessors = nusc_map.get_incoming_lane_ids(lane["token"])
-        successors = nusc_map.get_outgoing_lane_ids(lane["token"])
+        lanes_dict[lane["token"]]["predecessors"] = nusc_map.get_incoming_lane_ids(
+            lane["token"])
+        lanes_dict[lane["token"]]["successors"] = nusc_map.get_outgoing_lane_ids(
+            lane["token"])
 
-        for pred_lane_token in predecessors:
-            pre = ET.SubElement(lane_node, "tag")
-            pre.set("k", "predecessor")
-            pre.set("v", pred_lane_token)
+        graph = {
+            "nodes": nodes_dict,
+            "lanes": lanes_dict
+        }
 
-        for succ_lane_token in successors:
-            succ = ET.SubElement(node, "tag")
-            succ.set("k", "successor")
-            succ.set("v", succ_lane_token)
-
-    tree = ET.ElementTree(root)
-    return tree
+    return graph
 
 
 def main(nuscenes_dir: Path, output_dir: Path, maps_dir: Path) -> None:
     """The main method of this module.
 
     This method iterates through the maps of the nuScenes maps expansion
-    package, and creates a json file that contains the hallucinated bounding
-    boxes for the lanes of the map and an XML graph for the centerlines.
+    package, and creates json files that contain the hallucinated bounding
+    boxes for the lanes of the map and an the graph of the centerlines.
 
     :param nuscenes_dir: Path to the nuScenes data.
     :param output_dir: Path to save the results.
@@ -163,9 +192,6 @@ def main(nuscenes_dir: Path, output_dir: Path, maps_dir: Path) -> None:
         lanes = data["lane"] + data["lane_connector"]
         centerlines = data["arcline_path_3"]
 
-        # Create new xml ETree
-        root = ET.Element("nuScenesMap")
-
         # Generate hallucinated bounding boxes
         lane_token_to_halluc_bbox = create_halluc_bboxes(
             nodes, lanes, polygons)
@@ -175,13 +201,11 @@ def main(nuscenes_dir: Path, output_dir: Path, maps_dir: Path) -> None:
                   "_laneid_to_halluc_bbox.json", "w") as outfile:
             json.dump(lane_token_to_halluc_bbox, outfile)
 
-        # Generate XML graph for nuScenes centerlines
-        tree = create_xml_graph(nusc_map, root, lanes, centerlines)
+        # Generate graph for nuScenes centerlines to json file
+        graph = create_json_graph(nusc_map, lanes, centerlines)
 
-        # Save the XML graph
-        with open(
-                f"{output_dir}/{map_file.stem}_map.xml", "wb") as files:
-            tree.write(files)
+        with open(f"{output_dir}/{map_file.stem}_map.json", "w") as outfile:
+            json.dump(graph, outfile)
 
 
 if __name__ == "__main__":
