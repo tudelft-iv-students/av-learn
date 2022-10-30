@@ -12,6 +12,7 @@ from nuscenes.eval.detection.evaluate import DetectionEval
 from nuscenes.eval.tracking.data_classes import TrackingConfig
 from nuscenes.eval.tracking.evaluate import TrackingEval
 
+from nusc_eval_prediction import PredictionEval
 
 class Evaluator:
     """Evaluate a `task` of the AV-learn pipeline.
@@ -109,8 +110,16 @@ class Evaluator:
                 render_classes=self.kwargs.get('render_classes', []))
 
         else:
-            # TODO: Initialize evaluator for the prediction task
-            pass
+            nusc = NuScenes(
+                version=self.kwargs.get("version", 'v1.0-trainval'),
+                verbose=self.kwargs.get("verbose", True),
+                dataroot=self.dataroot)
+            
+            config_name = self.kwargs.get('config_name', 'predict_2020_icra.json')
+            
+            self.evaluator = PredictionEval(
+                nusc, config=config_name, result_path=self.results,
+                output_dir=self.output)
 
     def __init_kitti(self) -> None:
         """Initialize a KITTI Evaluator."""
@@ -131,6 +140,8 @@ class Evaluator:
         elif self.task == 'tracking':
             return self.evaluator.main(
                 render_curves=self.kwargs.get("render_curves", True))
+        else:
+            return self.evaluator.main()
 
     def __eval_kitti(self) -> Dict[str, Any]:
         """Evaluate on KITTI."""
