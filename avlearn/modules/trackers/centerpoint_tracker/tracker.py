@@ -51,7 +51,7 @@ class CenterPointTracker(object):
         self.save_root = save_root
         self.max_age = max_age
 
-    def track(self):
+    def forward(self):
         """
         Executes the tracking process for each dataset
         """

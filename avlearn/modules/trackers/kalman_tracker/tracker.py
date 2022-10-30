@@ -72,7 +72,7 @@ class KalmanTracker(object):
         self.max_age = max_age
         self.min_hits = min_hits
 
-    def track(self):
+    def forward(self):
         """
         Executes the Kalman tracking process for each dataset
         """
