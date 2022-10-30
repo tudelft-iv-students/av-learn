@@ -1,7 +1,6 @@
 from typing import Union
 
-from mmdet3d_datasets.nuscenes_dataset import \
-    NuScenesDataset as MMDET3D_NuScenesDataset
+from avlearn.config.definitions import ROOT_DIR
 from mmcv import Config
 
 from detdataset import DetectionDataset
@@ -11,13 +10,12 @@ class NuScenesDataset(DetectionDataset):
     """
     Dataset wrapper class for mmdetection3d NuScenesDataset.
     """
-    # TODO: add default cfg filepath
-
-    def __init__(self, cfg: Union[str, Config] = "", mode: str = 'train',
+    def __init__(self, cfg: Union[str, Config, None] = None, mode: str = 'train',
                  past_timesteps: int = 0, future_timesteps: int = 0) -> None:
         """
         :param cfg: Config dict or path to config file. 
                     Config dict should at least contain the key "type".
+                    Defaults to None.
         :param mode: Whether the dataset contains training, test, 
                      or validation data. Defaults to 'train'.
         :param past_timesteps: The number of samples preceding <index> to 
@@ -25,7 +23,9 @@ class NuScenesDataset(DetectionDataset):
         :param future_timesteps: The number of samples following <index> to 
                                  return per __getitem__ call. Defaults to 0.
         """
+        if cfg is None:
+            cfg = str(ROOT_DIR / 'modules/detectors/mmdet3d/configs/_base_/datasets/nus-3d.py')
         super().__init__(cfg, mode, past_timesteps, future_timesteps)
-        if not isinstance(self._dataset, MMDET3D_NuScenesDataset):
-            raise TypeError("dataset must be mmdetection3d.NuScenesDataset, "
-                            f"but got {type(self._dataset)}")
+        if not self.cfg.dataset_type == 'NuScenesDataset':
+            raise TypeError("cfg.dataset_type must be 'NuScenesDataset', "
+                            f"but got {type(self.cfg.dataset_type)}")
