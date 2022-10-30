@@ -11,7 +11,6 @@ def collect_env():
     """Collect the information of the running environments."""
     env_info = collect_base_env()
     env_info['MMDetection'] = mmdet.__version__
-    env_info['MMSegmentation'] = mmseg.__version__
     env_info['MMDetection3D'] = avlearn.modules.detectors.mmdet3d__version__ + '+' + get_git_hash()[:7]
     env_info['spconv2.0'] = IS_SPCONV2_AVAILABLE
     return env_info
