@@ -8,9 +8,9 @@ from mmcv import is_tuple_of
 from mmcv.utils import build_from_cfg
 
 from avlearn.modules.detectors.mmdet3d.core import VoxelGenerator
-from avlearn.modules.detectors.mmdet3d.core.bbox import (CameraInstance3DBoxes, DepthInstance3DBoxes,
-                                                         LiDARInstance3DBoxes, box_np_ops)
-from avlearn.datasets.mmdet3d_datasets.pipelines.compose import Compose
+from avlearn.modules.detectors.mmdet3d.core.bbox import (
+    CameraInstance3DBoxes, DepthInstance3DBoxes, LiDARInstance3DBoxes, box_np_ops)
+from avlearn.datasets.detection.mmdet3d_datasets.pipelines.compose import Compose
 from mmdet.datasets.pipelines import RandomCrop, RandomFlip, Rotate
 from ..builder import OBJECTSAMPLERS, PIPELINES
 from .data_augment_utils import noise_per_object_v3_
