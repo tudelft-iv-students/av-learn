@@ -9,10 +9,13 @@ from nuscenes import NuScenes
 from nuscenes.eval.common.config import config_factory
 from nuscenes.eval.detection.data_classes import DetectionConfig
 from nuscenes.eval.detection.evaluate import DetectionEval
+from nuscenes.eval.prediction.compute_metrics import compute_metrics
+from nuscenes.eval.prediction.config import (PredictionConfig,
+                                             load_prediction_config)
 from nuscenes.eval.tracking.data_classes import TrackingConfig
 from nuscenes.eval.tracking.evaluate import TrackingEval
+from nuscenes.prediction import PredictHelper
 
-from nusc_eval_prediction import PredictionEval
 
 class Evaluator:
     """Evaluate a `task` of the AV-learn pipeline.
@@ -115,11 +118,24 @@ class Evaluator:
                 verbose=self.kwargs.get("verbose", True),
                 dataroot=self.dataroot)
             
-            config_name = self.kwargs.get('config_name', 'predict_2020_icra.json')
+            self.helper = PredictHelper(nusc)
             
-            self.evaluator = PredictionEval(
-                nusc, config=config_name, result_path=self.results,
-                output_dir=self.output)
+            config_name = self.kwargs.get('config_name', 'predict_2020_icra.json')
+            self.config: PredictionConfig = load_prediction_config(self.helper, config_name)
+            
+            if not isinstance(self.results, Path):
+                self.results = Path(self.results)
+            if not self.results.is_file():
+                raise FileNotFoundError(f"File not found: {self.results}")
+            if not isinstance(self.output, Path):
+                self.output = Path(self.output)
+            if not self.output.is_dir():
+                self.output.mkdir()
+            
+            filename = str(self.results.stem) + '_metrics.json'
+            self.submission_path = self.output / filename
+            
+            self.predictions = json.load(open(self.results, 'r'))
 
     def __init_kitti(self) -> None:
         """Initialize a KITTI Evaluator."""
@@ -141,7 +157,9 @@ class Evaluator:
             return self.evaluator.main(
                 render_curves=self.kwargs.get("render_curves", True))
         else:
-            return self.evaluator.main()
+            metrics: Dict[str, Dict[str, List[float]]] = compute_metrics(self.predictions, self.helper, self.config)
+            json.dump(metrics, open(self.submission_path, 'w+'), indent=2)
+            return metrics
 
     def __eval_kitti(self) -> Dict[str, Any]:
         """Evaluate on KITTI."""
