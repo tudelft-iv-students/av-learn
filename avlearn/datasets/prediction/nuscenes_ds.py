@@ -198,13 +198,8 @@ class NuScenesDataset(Dataset):
         if past_traj.shape[0] == 0:
             return [0], [0], [0], [0]
 
-        traj_records = self.helper.get_past_for_agent(
-            instance_token, sample_token, seconds=self.config['train_size'],
-            in_agent_frame=False, just_xy=False)
-
-        if past_traj.shape[0] > self.config['train_size'] * 2:
-            past_traj = past_traj[0:int(self.config['train_size']) * 2]
-            traj_records = traj_records[0:int(self.config['train_size']) * 2]
+        if past_traj.shape[0] > self.config['train_size']:
+            past_traj = past_traj[0:int(self.config['train_size'])]
 
         cur_traj = self.helper.get_sample_annotation(
             instance_token, sample_token)["translation"][:2]
@@ -215,36 +210,15 @@ class NuScenesDataset(Dataset):
         all_trajs[1:, :] = past_traj
         ori_traj = copy.deepcopy(all_trajs)
 
-        trajs = np.zeros((all_trajs.shape[0], 6), dtype=np.float32)
+        trajs = np.zeros((all_trajs.shape[0], 3), dtype=np.float32)
         trajs[:, 0:2] = np.matmul(rot, (all_trajs - orig.reshape(-1, 2)).T).T
-
-        sam_tokens = [traj_records[i]['sample_token']
-                      for i in range(len(traj_records))]
-        sam_tokens.insert(0, sample_token)
-
-        i_t = instance_token
-        for k in range(len(sam_tokens)):
-            s_t = sam_tokens[k]
-            v = self.helper.get_velocity_for_agent(i_t, s_t)
-            a = self.helper.get_acceleration_for_agent(i_t, s_t)
-            theta = self.helper.get_heading_change_rate_for_agent(i_t, s_t)
-
-            if np.isnan(v):
-                v = 0
-            if np.isnan(a):
-                a = 0
-            if np.isnan(theta):
-                theta = 0
-            trajs[k, 2] = v
-            trajs[k, 3] = a
-            trajs[k, 4] = theta
-            trajs[k, 5] = 1.0
+        trajs[:, 2] = 1.0
 
         traj_zeropadded = np.zeros(
-            (int(self.config['train_size']) * 2 + 1, 6),
+            (int(self.config['train_size']) + 1, 3),
             dtype=np.float32)
         ori_zeropadded = np.zeros(
-            (int(self.config['train_size']) * 2 + 1, 2),
+            (int(self.config['train_size']) + 1, 2),
             dtype=np.float32)
 
         trajs = np.flip(trajs, 0)
