@@ -49,7 +49,8 @@ def load_pretrain(net, pretrain_dict):
     """
     state_dict = net.state_dict()
     for key in pretrain_dict.keys():
-        if key in state_dict and (pretrain_dict[key].size() == state_dict[key].size()):
+        if key in state_dict and (
+                pretrain_dict[key].size() == state_dict[key].size()):
             value = pretrain_dict[key]
             if not isinstance(value, torch.Tensor):
                 value = value.data
@@ -110,8 +111,8 @@ class Optimizer(object):
         assert opt == "sgd" or opt == "adam"
         if opt == "sgd":
             self.opt = optim.SGD(
-                param_groups, momentum=config["momentum"], weight_decay=config["wd"]
-            )
+                param_groups, momentum=config["momentum"],
+                weight_decay=config["wd"])
         elif opt == "adam":
             self.opt = optim.Adam(param_groups, weight_decay=0)
 
@@ -270,3 +271,26 @@ class PostProcess(nn.Module):
             % (loss, cls, reg, ade1, fde1, ade, fde)
         )
         print()
+
+
+def collate_fn(batch):
+    batch = from_numpy(batch)
+    return_batch = dict()
+    # Batching by use a list for non-fixed size
+    for key in batch[0].keys():
+        return_batch[key] = [x[key] for x in batch]
+    return return_batch
+
+
+def from_numpy(data):
+    """Recursively transform numpy.ndarray to torch.Tensor.
+    """
+    if isinstance(data, dict):
+        for key in data.keys():
+            data[key] = from_numpy(data[key])
+    if isinstance(data, list) or isinstance(data, tuple):
+        data = [from_numpy(x) for x in data]
+    if isinstance(data, np.ndarray):
+        """Pytorch now has bool type."""
+        data = torch.from_numpy(data)
+    return data
