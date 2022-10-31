@@ -44,14 +44,16 @@ class LaneGCN(nn.Module):
         self.map_net = MapNet(n_map=config["n_map"],
                               num_scales=config["num_scales"])
 
-        self.a2m = A2M(n_map=config["n_map"], n_actor=config["n_actor"])
+        self.a2m = A2M(n_map=config["n_map"],
+                       n_actor=config["n_actor"], config=config)
         self.m2m = M2M(n_map=config["n_map"], num_scales=config["num_scales"])
-        self.m2a = M2A(n_map=config["n_map"], n_actor=config["n_actor"])
-        self.a2a = A2A(n_actor=config["n_actor"])
+        self.m2a = M2A(n_map=config["n_map"],
+                       n_actor=config["n_actor"], config=config)
+        self.a2a = A2A(n_actor=config["n_actor"], config=config)
 
         self.pred_net = PredNet(num_mods=config["num_mods"],
                                 n_actor=config["n_actor"],
-                                num_preds=config["num_preds"])
+                                num_preds=config["num_preds"], config=config)
 
     def forward(self, data: Dict) -> Dict[str, List[Tensor]]:
         """
@@ -63,6 +65,7 @@ class LaneGCN(nn.Module):
         scores [M x K]
         """
         actors, actor_idcs = actor_gather(gpu(data["feats"]))
+        print(actors.shape)
         actor_ctrs = gpu(data["ctrs"])
         # extract actor features
         actors = self.actor_net(actors)
@@ -118,7 +121,7 @@ def graph_gather(graphs: List[Dict]) -> Dict:
     """
     Constructs a lane graph, given the map data as input. For any two lanes 
     which are directly reachable, 4 types of connections are defined: 
-    predecessor, successor, left neighbour and right neighbour. 
+    predecessor, successor. 
     :param graph: list of input lanes and their connectivity.
     :returns: a dictionary corresponding to the graph in the following format:
 
@@ -130,9 +133,6 @@ def graph_gather(graphs: List[Dict]) -> Dict:
             0-th: 0-th seq ctrs, ndarray, (num of node, 2)
         ]
         "feats": torch.tensor, (all node in batch, 2)
-        "turn": torch.tensor, (all node in batch, 2) left, right
-        "control": torch.tensor, (all node in batch, )
-        "intersect": torch.tensor, (all node in batch, )
         "pre":[
             0-th:{ # 0-th means 0-th dilated
                 "u": torch.tensor, (all batch node num, )
@@ -144,16 +144,6 @@ def graph_gather(graphs: List[Dict]) -> Dict:
                 "u": torch.tensor, (all batch node num, )
                 "v": torch.tensor, (all batch node num, ) # v is the suc of u
             }
-        ]
-        "left": [
-            "u": torch.tensor, (all batch node num, )
-            "v": torch.tensor, (all batch node num, ) # v is the nearest left 
-                node of u
-        ]
-        "right": [
-            "u": torch.tensor, (all batch node num, )
-            "v": torch.tensor, (all batch node num, ) # v is the nearest right 
-                node of u
         ]
     }
     """
@@ -175,7 +165,7 @@ def graph_gather(graphs: List[Dict]) -> Dict:
     graph["idcs"] = node_idcs
     graph["ctrs"] = [x["ctrs"] for x in graphs]
 
-    for key in ["feats", "turn", "control", "intersect"]:
+    for key in ["feats"]:
         graph[key] = torch.cat([x[key] for x in graphs], 0)
 
     for k1 in ["pre", "suc"]:
@@ -188,15 +178,6 @@ def graph_gather(graphs: List[Dict]) -> Dict:
                         for j in range(batch_size)], 0
                 )
 
-    for k1 in ["left", "right"]:
-        graph[k1] = dict()
-        for k2 in ["u", "v"]:
-            temp = [graphs[i][k1][k2] + counts[i] for i in range(batch_size)]
-            temp = [
-                x if x.dim() > 0 else graph["pre"][0]["u"].new().resize_(0)
-                for x in temp
-            ]
-            graph[k1][k2] = torch.cat(temp)
     return graph
 
 
@@ -306,7 +287,7 @@ class MapNet(nn.Module):
             Linear(n_map, n_map, norm=norm, ng=ng, act=False),
         )
 
-        keys = ["ctr", "norm", "ctr2", "left", "right"]
+        keys = ["ctr", "norm", "ctr2"]
         for i in range(num_scales):
             keys.append("pre" + str(i))
             keys.append("suc" + str(i))
@@ -330,7 +311,7 @@ class MapNet(nn.Module):
         self.fuse = nn.ModuleDict(fuse)
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, graph: dict) -> Tuple(Tensor, List[Tensor], Tensor):
+    def forward(self, graph: dict) -> Tuple[Tensor, List[Tensor], Tensor]:
         """
         Performs a forward pass of the MapNet.
         :param graph: the constructed lane graph.
@@ -369,19 +350,6 @@ class MapNet(nn.Module):
                         self.fuse[key][i](feat[graph[k1][k2]["v"]]),
                     )
 
-            if len(graph["left"]["u"] > 0):
-                temp.index_add_(
-                    0,
-                    graph["left"]["u"],
-                    self.fuse["left"][i](feat[graph["left"]["v"]]),
-                )
-            if len(graph["right"]["u"] > 0):
-                temp.index_add_(
-                    0,
-                    graph["right"]["u"],
-                    self.fuse["right"][i](feat[graph["right"]["v"]]),
-                )
-
             feat = self.fuse["norm"][i](temp)
             feat = self.relu(feat)
 
@@ -398,7 +366,7 @@ class A2M(nn.Module):
     actor nodes to lane nodes.
     """
 
-    def __init__(self, n_map: int, n_actor: int):
+    def __init__(self, n_map: int, n_actor: int, config: str):
         """
         Intilializes the A2M network. A2M introduces real-time traffic 
         information to lane nodes, such as blockage or usage of the lanes. Given 
@@ -406,10 +374,12 @@ class A2M(nn.Module):
         using a spatial attention layer.
         :param n_map: the number of lane nodes in the map.
         :param n_actor: the number of actor nodes.
+        :param config: the path to the network's configuration file
         """
         super(A2M, self).__init__()
         self.n_map = n_map
         self.n_actor = n_actor
+        self.config = config
         # group normalization
         norm = "GN"
         ng = 1
@@ -439,17 +409,6 @@ class A2M(nn.Module):
         :param actor_ctrs: list of actor ctrs.
         :returns: the updated lane nodes features [N x n_map] (input of M2M).
         """
-        # meta, static and dyn fuse using attention
-        meta = torch.cat(
-            (
-                graph["turn"],
-                graph["control"].unsqueeze(1),
-                graph["intersect"].unsqueeze(1),
-            ),
-            1,
-        )
-        feat = self.meta(torch.cat((feat, meta), 1))
-
         for i in range(len(self.att)):
             feat = self.att[i](
                 feat,
@@ -485,7 +444,7 @@ class M2M(nn.Module):
         norm = "GN"
         ng = 1
 
-        keys = ["ctr", "norm", "ctr2", "left", "right"]
+        keys = ["ctr", "norm", "ctr2"]
         for i in range(self.num_scales):
             keys.append("pre" + str(i))
             keys.append("suc" + str(i))
@@ -533,19 +492,6 @@ class M2M(nn.Module):
                         self.fuse[key][i](feat[graph[k1][k2]["v"]]),
                     )
 
-            if len(graph["left"]["u"] > 0):
-                temp.index_add_(
-                    0,
-                    graph["left"]["u"],
-                    self.fuse["left"][i](feat[graph["left"]["v"]]),
-                )
-            if len(graph["right"]["u"] > 0):
-                temp.index_add_(
-                    0,
-                    graph["right"]["u"],
-                    self.fuse["right"][i](feat[graph["right"]["v"]]),
-                )
-
             feat = self.fuse["norm"][i](temp)
             feat = self.relu(feat)
 
@@ -562,7 +508,7 @@ class M2A(nn.Module):
         map information from lane nodes to actor nodes.
     """
 
-    def __init__(self, n_actor: int, n_map: int):
+    def __init__(self, n_actor: int, n_map: int, config: str):
         """
         Intilializes the M2A network. M2A fuses updated map features with 
         real-time traffic information back to the actors. Given a lane node, the
@@ -570,10 +516,12 @@ class M2A(nn.Module):
         attention layer.
         :param n_map: the number of lane nodes in the map.
         :param n_actor: the number of actor nodes.
+        :param config: the path to the network's configuration file.
         """
         super(M2A, self).__init__()
         norm = "GN"
         ng = 1
+        self.config = config
 
         self.n_actor = n_actor
         self.n_map = n_map
@@ -620,7 +568,7 @@ class A2A(nn.Module):
     Class for the actor to actor block: performs interactions among actors.
     """
 
-    def __init__(self, n_actor: int):
+    def __init__(self, n_actor: int, config: str):
         """
         Intilializes the A2A network. A2A handles the interactions between 
         actors and produces the output actor features, which are then used by 
@@ -628,10 +576,12 @@ class A2A(nn.Module):
         features from its context actor nodes are aggregated using a spatial 
         attention layer.
         :param n_actor: the number of actor nodes.
+        :param config: the path to the network's configuration file.
         """
         super(A2A, self).__init__()
         norm = "GN"
         ng = 1
+        self.config = config
 
         self.n_actor = n_actor
 
@@ -671,16 +621,18 @@ class PredNet(nn.Module):
     Class for the final motion forecasting with Linear Residual block.
     """
 
-    def __init__(self, num_mods, n_actor, num_preds):
+    def __init__(self, num_mods: int, n_actor: int, num_preds: int, config: str):
         """
         Intilializes the prediction network. 
         :param n_mods: the number of predicted trajectories.
         :param n_actor: the number of actor nodes
         :param num_preds: the number of predicted frames.
+        :param config: the path to the network's configuration file.
         """
         super(PredNet, self).__init__()
         norm = "GN"
         ng = 1
+        self.config = config
 
         self.num_mods = num_mods
         self.n_actor = n_actor

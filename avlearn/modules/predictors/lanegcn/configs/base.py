@@ -13,7 +13,7 @@ display_iters = 205942
 val_iters = 205942 * 2
 save_freq = 1.0
 epoch = 0
-horovod = True
+horovod = False
 opt = "adam"
 num_epochs = 36
 lr = [1e-3, 1e-4]
@@ -24,8 +24,8 @@ save_dir = os.path.join(root_path, "results", model_name)
 if not os.path.isabs(save_dir):
     save_dir = os.path.join(root_path, "results", save_dir)
 
-batch_size = 32
-val_batch_size = 32
+batch_size = 16
+val_batch_size = 16
 workers = 0
 val_workers = workers
 
@@ -48,6 +48,7 @@ preprocess_val = os.path.join(
 )
 preprocess_test = os.path.join(root_path, "dataset", 'preprocess',
                                'test_test.p')
+train_size = 19
 
 """Model"""
 rot_aug = False
