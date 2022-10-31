@@ -7,7 +7,7 @@ import mmcv
 import numpy as np
 
 from avlearn.modules.detectors.mmdet3d.core.bbox import box_np_ops
-from avlearn.datasets.mmdet3d_datasets.pipelines import data_augment_utils
+from avlearn.datasets.detection.mmdet3d_datasets.pipelines import data_augment_utils
 from ..builder import OBJECTSAMPLERS, PIPELINES
 
 

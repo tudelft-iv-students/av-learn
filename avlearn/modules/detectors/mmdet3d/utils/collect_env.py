@@ -3,7 +3,6 @@ from mmcv.utils import collect_env as collect_base_env
 from mmcv.utils import get_git_hash
 
 import mmdet
-import mmseg
 import avlearn.modules.detectors.mmdet3d
 from avlearn.modules.detectors.mmdet3d.ops.spconv import IS_SPCONV2_AVAILABLE
 
@@ -12,7 +11,6 @@ def collect_env():
     """Collect the information of the running environments."""
     env_info = collect_base_env()
     env_info['MMDetection'] = mmdet.__version__
-    env_info['MMSegmentation'] = mmseg.__version__
     env_info['MMDetection3D'] = avlearn.modules.detectors.mmdet3d__version__ + '+' + get_git_hash()[:7]
     env_info['spconv2.0'] = IS_SPCONV2_AVAILABLE
     return env_info

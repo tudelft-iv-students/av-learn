@@ -12,7 +12,7 @@ from pyquaternion import Quaternion
 from shapely.geometry import MultiPoint, box
 
 from avlearn.modules.detectors.mmdet3d.core.bbox import points_cam2img
-from avlearn.datasets.mmdet3d_datasets import NuScenesDataset
+from avlearn.datasets.detection.mmdet3d_datasets import NuScenesDataset
 
 nus_categories = ('car', 'truck', 'trailer', 'bus', 'construction_vehicle',
                   'bicycle', 'motorcycle', 'pedestrian', 'traffic_cone',
