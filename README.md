@@ -7,10 +7,11 @@ Autonomous driving is traditionally perceived as a classical robotics problem, w
 Moreover, a recent surge in methods that erode the boundaries between the AV subtasks challenge the predominance of the traditional **sequential** AV paradigm. Decomposing the problem into independent modules that are executed sequentially prevents downstream tasks from correcting mistakes made by upstream ones. To this end, **multitask** methods use a joint model to solve tasks simultaneously, combining all output losses in one common objective and jointly optimizing them. On the other hand, **blackbox** methods avoid simple intermediate representations entirely. Such networks are capable of training directly from the data without the need of manual interventions. The motivation behind these techniques lies in the fact that human intuition about what sequence of tasks is necessary for autonomous driving, does not necessarily translate into optimal system performance. Nevertheless, the blackbox nature of such systems raises certain questions on their ethical and safety implications, especially since these methods have not yet been thoroughly studied or benchmarked. By designing a framework that supports sequential, multitask and blackbox training, direct comparison between these approaches will be made possible. An overview of these different AV paradigms is shown in Figure 1.
 
 
-<figure id="fig1">
-    <img src="resources\pipeline_architectures.jpg" width="80%" alt="pipeline architectures overview">
-    <p align="center">Figure 1: Overview of different AV pipeline architectures.</p>
-</figure>
+<p align="center">
+<img src="resources\pipeline_architectures.jpg" width="80%" alt="pipeline architectures overview">
+</p>
+<p align="center">Figure 1: Overview of different AV pipeline architectures.</p>
+
 
 ## Motivation
 The main motivation for this project is to devise and implement a modular framework for combining different AV tasks and promoting research on autonomous driving. The aforementioned framework is to be of a *“plug and play”* nature, thus allowing users to quickly switch out between modules and compare different network combinations. Another focus of the project lies in allowing for sequential, multi-task, and blackbox training of the different networks, so that the impact of each module on the rest can be studied, when trained in parallel. The release of the framework as an open-source code with a focus on user-friendliness and documentation is meant to motivate the formation of an active community, centered around AV learning.
@@ -34,10 +35,11 @@ pipeline.visualize()
 
 Figure 2 shows the UML class diagram for a high level depiction of the framework's architecture. In particular, the Pipeline class initializes three different objects of the abstract Task class (*i.e.*, a detector, tracker, and predictor). The Task class is a parent class for the Detector, Tracker, and Predictor classes, which in turn share inheritance relationships with individual models (not shown in the figure). Each model class needs a Trainer and Evaluator class object, which themselves depend on the abstract Loss and Dataset classes. These classes are also parent classes for individual loss classes (*i.e*., Detection, Tracking, Prediction Loss) or datasets respectively.
 
-<figure id="fig2">
+<p align="center">
     <img src="resources\Class_Diagram.jpg" width="80%" alt="UML class diagram">
-    <p align="center">Figure 2: UML class diagram for high-level depiction of the framework's architecture.</p>
-</figure>
+</p>
+<p align="center">Figure 2: UML class diagram for high-level depiction of the framework's architecture.</p>
+
 
 ## Getting started
 Please refer to [getting started](docs/getting_started.md) for installation and data preparation details.
