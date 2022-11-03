@@ -28,8 +28,8 @@ class MMDet3DDetector:
         """A function wrapper for launching model training according to cfg."""
         dataset = DetectionDataset(self.cfg)
         distributed: bool = kwargs.get('distributed', False)
-        validate: bool = kwargs.get('distributed', False),
-        timestamp: Optional[str] = kwargs.get('timestamp', None),
+        validate: bool = kwargs.get('distributed', False)
+        timestamp: Optional[str] = kwargs.get('timestamp', None)
         meta: Optional[dict] = kwargs.get('meta', None)       
         train_model(self.model, dataset, self.cfg, distributed, 
                     validate, timestamp, meta)
