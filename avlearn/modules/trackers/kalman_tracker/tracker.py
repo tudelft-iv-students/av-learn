@@ -109,8 +109,8 @@ class KalmanTracker(object):
         nusc_dataset = NuScenesDataset(self.data_cfg_path)
 
         # create directory folder for the results
-        version = nusc_dataset.version
-        data_root = nusc_dataset.data_root
+        version = nusc_dataset._dataset.version
+        data_root = nusc_dataset._dataset.data_root
         save_dir = Path(self.save_root, self.dataset)
         save_dir.mkdir(parents=True, exist_ok=True)
         print("Results saved in:", save_dir)
