@@ -6,7 +6,8 @@ and
     https://github.com/uber-research/LaneGCN/blob/master/data.py
 """
 import copy
-from typing import Tuple
+from typing import List, Tuple
+from typing_extensions import TypedDict
 
 import numpy as np
 from nuscenes import NuScenes
@@ -14,11 +15,17 @@ from nuscenes.eval.prediction.splits import get_prediction_challenge_split
 from nuscenes.prediction import PredictHelper
 from nuscenes.prediction.input_representation.static_layers import \
     load_all_maps
+import torch
 from torch.utils.data import Dataset
 
 from map_representation.nuscenes_map import NuScenesMap
 from utils.data_utils import dilated_nbrs
 
+
+class PredictionResults(TypedDict):
+    reg: List[torch.Tensor]
+    cls: List[torch.Tensor]
+    
 
 class NuScenesDataset(Dataset):
     """This class implements a nuScenes prediction dataset.
@@ -364,3 +371,25 @@ class NuScenesDataset(Dataset):
                                        graph['num_nodes'],
                                        self.config['num_scales'])
         return graph
+
+    def format_results(self, results: PredictionResults, samples: List[int]) -> List[dict]:
+        """
+        Format the results to the official nuScenes prediction format.
+        :param results: Output of the prediction task.
+        :param samples: List of indices of the samples that were passed
+                        as input to the prediction task. 
+        :return: List of formatted results. 
+        """
+        def _format(self, prediction: torch.Tensor, probabilities: torch.Tensor, sample_idx: int) -> dict:
+            instance_token, sample_token = self.token_list[sample_idx].split("_")
+            return {
+                'instance': instance_token,
+                'sample': sample_token,
+                'prediction': prediction[0],
+                'probabilities': probabilities[0]
+            }
+        
+        assert len(results['reg']) == len(results['cls']) == len(samples)
+        with torch.no_grad():
+            return [_format(self, results['reg'][i], results['cls'][i], samples[i]) for i in range(len(results))]
+ 
