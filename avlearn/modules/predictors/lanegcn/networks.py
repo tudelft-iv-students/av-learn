@@ -23,11 +23,27 @@ sys.path.insert(0, root_path)
 
 
 class LaneGCN():
+    """
+    LaneGCN wrapper class for av-learn. 
+    """
+
     def __init__(self,
                  config: str,
+                 data_root: str,
+                 map_data_root: str,
                  resume: bool = False,
                  checkpoint_pth: str = None):
+        """
+        Loads the initial LaneGCN parameters, needed for training or inference.
+        :param config: the path to the LaneGCN configuration file
+        :param data_root: the path to the root folder of the data.
+        :param map_data_root: the path to the root folder of the map data.
+        :param resume: whether to resume from a pre-trained checkpoint.
+        :param checkpoint_pth: the path to a ckeckpoint.
+        """
         self.config = config
+        self.data_root = data_root
+        self.map_data_root = map_data_root
         self.net = Net(self.config)
         self.net = self.net.cuda()
 
@@ -49,7 +65,6 @@ class LaneGCN():
             if resume:
                 self.config["epoch"] = ckpt["epoch"]
                 self.opt.load_state_dict(ckpt["opt_state"])
-        
 
         # Create log
         self.save_dir = config["save_dir"]
@@ -58,12 +73,14 @@ class LaneGCN():
             os.makedirs(self.save_dir)
 
     def train(self):
+        """
+        Performs the training of the LaneGCN network.
+        """
         # sys.stdout = Logger(self.log)
         # Data loader for training
-        ##################### Remove hard coded paths
-        train_dataset = Dataset("/home/iaaip/Desktop/iaaip-AVLEARN/data/nuscenes", self.config,
-                                maps_dir="/home/iaaip/Desktop/iaaip-AVLEARN/av-learn/avlearn/datasets/prediction/map_representation/results",
-                                split="train", train=True)                            
+        train_dataset = Dataset(self.data_root, self.config,
+                                maps_dir=self.map_data_root + "/results",
+                                split="train", train=True)
         self.train_loader = DataLoader(
             train_dataset,
             batch_size=self.config["batch_size"],
@@ -72,10 +89,9 @@ class LaneGCN():
             pin_memory=True,
             shuffle=True,
         )
-        ##################### Remove hard coded paths
         # Data loader for evaluation
-        val_dataset = Dataset("/home/iaaip/Desktop/iaaip-AVLEARN/data/nuscenes", self.config,
-                              maps_dir="/home/iaaip/Desktop/iaaip-AVLEARN/av-learn/avlearn/datasets/prediction/map_representation/results",
+        val_dataset = Dataset(self.data_root, self.config,
+                              maps_dir=self.map_data_root + "/results",
                               split="val", train=False)
         self.val_loader = DataLoader(
             val_dataset,
@@ -88,11 +104,13 @@ class LaneGCN():
         epoch = self.config["epoch"]
         self.remaining_epochs = int(np.ceil(self.config["num_epochs"] - epoch))
         for i in tqdm(range(self.remaining_epochs)):
-            self.train_epoch(epoch + i)
+            self.__train_epoch(epoch + i)
 
-    def train_epoch(self, epoch):
-
-        # self.train_loader.sampler.set_epoch(int(epoch))
+    def __train_epoch(self, epoch):
+        """
+        Performs the training of a single epoch of the LaneGCN network.
+        :param epoch: the current epoch to be trained.
+        """
         self.net.train()
 
         num_batches = len(self.train_loader)
@@ -120,7 +138,7 @@ class LaneGCN():
 
             num_iters = int(np.round(epoch * num_batches))
             if num_iters % save_iters == 0 or epoch >= self.config["num_epochs"]:
-                self.save_ckpt(epoch)
+                self.__save_ckpt(epoch)
 
             if num_iters % display_iters == 0:
                 dt = time.time() - start_time
@@ -138,6 +156,10 @@ class LaneGCN():
                 return
 
     def __val_epoch(self, epoch):
+        """
+        Evaluates the performance of a LaneGCN network on a specific epoch.
+        :param epoch: the epoch used for evaluating.
+        """
         self.net.eval()
 
         start_time = time.time()
@@ -155,7 +177,11 @@ class LaneGCN():
         self.post_process.display(metrics, dt, epoch)
         self.net.train()
 
-    def save_ckpt(self, epoch):
+    def __save_ckpt(self, epoch):
+        """
+        Saves a checkpoint for the LaneGCN network on a specific epoch.
+        :param epoch: the current train epoch of the model.
+        """
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
