@@ -5,7 +5,7 @@ from typing import Any, Callable, List, Union
 from mmcv import Config
 from torch.utils.data import Dataset
 
-from mmdet3d_datasets.builder import build_dataset as build_mmdet3d_dataset
+from avlearn.datasets.detection.mmdet3d_datasets.builder import build_dataset as build_mmdet3d_dataset
 
 
 def _rgetattr(obj, attr, *args):

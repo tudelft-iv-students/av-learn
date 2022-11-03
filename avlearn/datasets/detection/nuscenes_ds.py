@@ -1,9 +1,8 @@
 from typing import Union
 
 from avlearn.config.definitions import ROOT_DIR
+from avlearn.datasets.detection.detdataset import DetectionDataset
 from mmcv import Config
-
-from detdataset import DetectionDataset
 
 
 class NuScenesDataset(DetectionDataset):
