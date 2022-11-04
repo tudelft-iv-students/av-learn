@@ -1,5 +1,5 @@
 import inspect
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from avlearn.datasets.detection.detdataset import DetectionDataset
 from avlearn.modules.detectors.mmdet3d.apis.inference import \
@@ -35,12 +35,12 @@ class MMDet3DDetector:
         train_model(self.model, dataset, self.cfg, distributed, 
                     validate, timestamp, meta)
         
-    def visualize(self, data: dict, result: dict, 
+    def visualize(self, data: dict, result: List[dict], 
                   out_dir: str, score_thr: float = 0.0, 
                   show: bool = False, snapshot: bool = False):
         """
         :param data (dict): Input points and the information of the sample.
-        :param result (dict): Prediction results.
+        :param result (list): Prediction results.
         :param out_dir (str): Output directory of visualization result.
         :param score_thr (float, optional): Minimum score of bboxes to be shown.
                                             Defaults to 0.0.
