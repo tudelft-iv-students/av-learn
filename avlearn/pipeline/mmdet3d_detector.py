@@ -38,7 +38,8 @@ class MMDet3DDetector:
     def visualize(self, data: dict, result: List[dict], 
                   out_dir: str, score_thr: float = 0.0, 
                   show: bool = False, snapshot: bool = False):
-        """
+        """A function wrapper for visualizing the output of the detector model.
+        
         :param data (dict): Input points and the information of the sample.
         :param result (list): Prediction results.
         :param out_dir (str): Output directory of visualization result.
