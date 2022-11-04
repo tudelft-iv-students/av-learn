@@ -1,4 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+
+# MODIFIED: show_results method of MVXTwoStageDetector
+
 import warnings
 from os import path as osp
 
@@ -454,13 +457,17 @@ class MVXTwoStageDetector(Base3DDetector):
                                             self.pts_bbox_head.test_cfg)
         return merged_bboxes
 
-    def show_results(self, data, result, out_dir):
+    def show_results(self, data, result, out_dir, 
+                     show: bool = False, snapshot: bool = False):
         """Results visualization.
 
         Args:
             data (dict): Input points and the information of the sample.
             result (dict): Prediction results.
             out_dir (str): Output directory of visualization result.
+            show (bool, optional): Visualize the results online. Defaults to False.
+            snapshot (bool, optional): Whether to save the online results.
+                                       Defaults to False.
         """
         for batch_id in range(len(result)):
             if isinstance(data['points'][0], DC):
@@ -500,4 +507,5 @@ class MVXTwoStageDetector(Base3DDetector):
                     f'Unsupported box_mode_3d {box_mode_3d} for conversion!')
 
             pred_bboxes = pred_bboxes.tensor.cpu().numpy()
-            show_result(points, None, pred_bboxes, out_dir, file_name)
+            show_result(points, None, pred_bboxes, out_dir, file_name, 
+                        show=show, snapshot=snapshot)
