@@ -56,6 +56,7 @@ class MMDet3DDetector:
             # valid for this specific implementation.
             valid_keys = inspect.signature(self.model.show_results).parameters.keys()
             kwargs = {key:value for key, value in locals().items() if key in valid_keys}
+            print(f'Parameters passed to self.model.show_results: {kwargs.keys()}')
             self.model.show_results(**kwargs)
         elif 'img' in data.keys():
             show_proj_det_result_meshlab(data, result, out_dir, 
