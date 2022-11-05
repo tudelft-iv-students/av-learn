@@ -1,4 +1,5 @@
 # Copyright (c) 2020 Uber Technologies, Inc. All rights reserved.
+
 import sys
 import os
 from fractions import gcd
@@ -8,14 +9,18 @@ from torch.nn import functional as F
 from utils import gpu, to_long
 from typing import Dict, List, Tuple, Union
 import numpy as np
-import time
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from layers import Conv1d, Res1d, Linear, LinearRes, Att, AttDest
 from loss import Loss
-from utils import PostProcess, Optimizer, load_pretrain, collate_fn, Logger
+from utils import PostProcess, Optimizer, load_pretrain, collate_fn, cpu
 from avlearn.datasets.prediction.nuscenes_ds import NuScenesDataset as Dataset
+from avlearn.datasets.prediction.nuscenes_ds import InferenceNSDataset
+from avlearn.apis.evaluate import Evaluator
+
+import json
+from pathlib import Path
 
 
 root_path = os.path.dirname(os.path.abspath(__file__))
@@ -28,14 +33,14 @@ class LaneGCN():
     """
 
     def __init__(self,
-                 config: str,
+                 config: dict,
                  data_root: str,
                  map_data_root: str,
                  resume: bool = False,
                  checkpoint_pth: str = None):
         """
         Loads the initial LaneGCN parameters, needed for training or inference.
-        :param config: the path to the LaneGCN configuration file
+        :param config: a LaneGCN configuration dictionary
         :param data_root: the path to the root folder of the data.
         :param map_data_root: the path to the root folder of the map data.
         :param resume: whether to resume from a pre-trained checkpoint.
@@ -57,8 +62,8 @@ class LaneGCN():
 
         if checkpoint_pth is not None:
             if not os.path.isabs(checkpoint_pth):
-                checkpoint_pth = os.path.join(
-                    config["save_dir"], checkpoint_pth)
+                checkpoint_pth = Path(
+                    config["save_dir"]) / Path(checkpoint_pth)
             ckpt = torch.load(
                 checkpoint_pth, map_location=lambda storage, loc: storage)
             load_pretrain(self.net, ckpt["state_dict"])
@@ -66,20 +71,151 @@ class LaneGCN():
                 self.config["epoch"] = ckpt["epoch"]
                 self.opt.load_state_dict(ckpt["opt_state"])
 
-        # Create log
-        self.save_dir = config["save_dir"]
-        self.log = os.path.join(self.save_dir, "log")
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        # Create save directory
+        self.save_dir = Path(config["save_dir"])
+        if not self.save_dir.exists():
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+
+    def infer(self, tracking_results: dict) -> List[Dict]:
+        """
+        Given a dictionary of tracking results, performs inference on the 
+        LaneGCN network.
+        :param tracking_results: a dictionary containing the tracking results 
+                        in the nuScenes format.
+        :returns: a list containing for each instance-sample token a dictionary 
+        of its predicted trajectories:
+        [{
+            "instance" : the instance token id.
+            "sample" : the sample token id.
+            "prediction" : a [K x num_pred x 2] array with the K different 
+                           predicted trajectories, num_pred frames into the 
+                           future.
+            "probablities" : a list of K probabilities, corresponding to the 
+                             confidence score for each predicted 
+                             trajectory.
+        }
+        {
+            ...
+        }
+        ...
+        ]
+        """
+        # load inference dataset
+        inferrence_dataset = InferenceNSDataset(self.data_root, self.config, tracking_results=tracking_results,
+                                                maps_dir=self.map_data_root,
+                                                split="val")
+        self.inferrence_loader = DataLoader(
+            inferrence_dataset,
+            batch_size=self.config["batch_size"],
+            num_workers=self.config["workers"],
+            collate_fn=collate_fn,
+            pin_memory=True,
+            shuffle=True,
+        )
+
+        results = []
+        for data in tqdm(self.inferrence_loader):
+            with torch.no_grad():
+                output = self.net(data)
+                for j, out in enumerate(output['reg']):
+                    result = dict()
+                    result['instance'], result["sample"] = data["ins_sam"][j]
+                    result['prediction'] = out[0][:, :12, :]
+                    result['probabilities'] = output['cls'][j][0]
+                    results.append(result)
+
+        return results
+
+    def evaluate(self,
+                 save_root,
+                 split: str = "val",
+                 version: str = "v1.0-trainval"):
+        """
+        Performs inference on the validation set of nuScenes for the prediction 
+        task on the LaneGCN network and saves the results in a json file, 
+        containing a list containing for each instance-sample token a 
+        dictionary of its predicted trajectories:
+        [{
+            "instance" : the instance token id.
+            "sample" : the sample token id.
+            "prediction" : a [K x num_pred x 2] array with the K different 
+                           predicted trajectories, num_pred frames into the 
+                           future.
+            "probablities" : a list of K probabilities, corresponding to the 
+                             confidence score for each predicted 
+                             trajectory.
+        }
+        {
+            ...
+        }
+        ...
+        ]
+        The inference results are then evaluated using the official nuScenes 
+        prediction evaluation, with the evaluation results also being saved.
+        :param save_root: the root directory, where the results will be saved.
+        :param split: the nuScenes split (Default: "val")
+        :param version: the nuScenes version (Default: "trainval")
+        """
+        # Data loader for evaluation
+        self.net.eval()
+        val_dataset = Dataset(self.data_root, self.config,
+                              maps_dir=self.map_data_root,
+                              split=split, train=False)
+        self.val_loader = DataLoader(
+            val_dataset,
+            batch_size=self.config["val_batch_size"],
+            num_workers=self.config["val_workers"],
+            collate_fn=collate_fn,
+            pin_memory=True,
+        )
+
+        results = []
+        for data in tqdm(self.val_loader):
+            with torch.no_grad():
+                output = self.net(data)
+                for j, out in enumerate(output['reg']):
+                    result = dict()
+                    result['instance'], result["sample"] = data["ins_sam"][j]
+                    result['prediction'] = out[0][:, :12, :]
+                    result['probabilities'] = output['cls'][j][0]
+                    results.append(result)
+
+        # convert to json serializable
+        infer_results = cpu(results)
+        save_path = Path(save_root)
+        infer_save_path = save_path / Path("inference_results")
+        eval_save_path = save_path / Path("evaluation_results")
+        # make save directories for both inference and evaluation results
+        infer_save_path.mkdir(parents=True, exist_ok=True)
+        eval_save_path.mkdir(parents=True, exist_ok=True)
+
+        # save inference results
+        with open(infer_save_path / Path("inference_result.json"), "w") as f:
+            json.dump(infer_results, f)
+
+        evaluator = Evaluator(
+            task="prediction",
+            dataset="nuscenes",
+            results=infer_save_path / Path("inference_result.json"),
+            output=eval_save_path,
+            dataroot=self.data_root,
+            split=split,
+            version=version,
+            config_path=None,
+            verbose=True,
+            render_classes=None,
+            render_curves=False,
+            plot_examples=0)
+
+        evaluator.evaluate()
 
     def train(self):
         """
         Performs the training of the LaneGCN network.
         """
-        # sys.stdout = Logger(self.log)
         # Data loader for training
         train_dataset = Dataset(self.data_root, self.config,
-                                maps_dir=self.map_data_root + "/results",
+                                maps_dir=self.map_data_root,
                                 split="train", train=True)
         self.train_loader = DataLoader(
             train_dataset,
@@ -89,19 +225,9 @@ class LaneGCN():
             pin_memory=True,
             shuffle=True,
         )
-        # Data loader for evaluation
-        val_dataset = Dataset(self.data_root, self.config,
-                              maps_dir=self.map_data_root + "/results",
-                              split="val", train=False)
-        self.val_loader = DataLoader(
-            val_dataset,
-            batch_size=self.config["val_batch_size"],
-            num_workers=self.config["val_workers"],
-            collate_fn=collate_fn,
-            pin_memory=True,
-        )
 
         epoch = self.config["epoch"]
+        # find remaining epochs
         self.remaining_epochs = int(np.ceil(self.config["num_epochs"] - epoch))
         for i in tqdm(range(self.remaining_epochs)):
             self.__train_epoch(epoch + i)
@@ -116,12 +242,6 @@ class LaneGCN():
         num_batches = len(self.train_loader)
         epoch_per_batch = 1.0 / num_batches
 
-        save_iters = int(np.ceil(self.config["save_freq"] * num_batches))
-        display_iters = int(
-            self.config["display_iters"] / self.config["batch_size"])
-        val_iters = int(self.config["val_iters"] / self.config["batch_size"])
-
-        start_time = time.time()
         metrics = dict()
         for data in tqdm(self.train_loader):
             epoch += epoch_per_batch
@@ -134,56 +254,20 @@ class LaneGCN():
 
             self.opt.zero_grad()
             loss_out["loss"].backward()
-            lr = self.opt.step(epoch)
-
-            num_iters = int(np.round(epoch * num_batches))
-            if num_iters % save_iters == 0 or epoch >= self.config["num_epochs"]:
-                self.__save_ckpt(epoch)
-
-            if num_iters % display_iters == 0:
-                dt = time.time() - start_time
-                # metrics = sync(metrics)
-
-                self.post_process.display(metrics, dt, epoch, lr)
-                start_time = time.time()
-                metrics = dict()
-
-            if num_iters % val_iters == 0:
-                self.__val_epoch(epoch)
 
             if epoch >= self.config["num_epochs"]:
-                self.__val_epoch(epoch)
-                return
-
-    def __val_epoch(self, epoch):
-        """
-        Evaluates the performance of a LaneGCN network on a specific epoch.
-        :param epoch: the epoch used for evaluating.
-        """
-        self.net.eval()
-
-        start_time = time.time()
-        metrics = dict()
-        for i, data in enumerate(self.val_loader):
-            data = dict(data)
-            with torch.no_grad():
-                output = self.net(data)
-                loss_out = self.loss(output, data)
-                post_out = self.post_process(output, data)
-                self.post_process.append(metrics, loss_out, post_out)
-
-        dt = time.time() - start_time
-        # metrics = sync(metrics)
-        self.post_process.display(metrics, dt, epoch)
-        self.net.train()
+                break
+        # save checkpoint for each epoch
+        self.__save_ckpt(epoch)
+        return
 
     def __save_ckpt(self, epoch):
         """
         Saves a checkpoint for the LaneGCN network on a specific epoch.
         :param epoch: the current train epoch of the model.
         """
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        if not self.save_dir.exists():
+            self.save_dir.mkdir(parents=True, exist_ok=True)
 
         state_dict = self.net.state_dict()
         for key in state_dict.keys():
@@ -193,7 +277,7 @@ class LaneGCN():
         torch.save(
             {"epoch": epoch, "state_dict": state_dict,
                 "opt_state": self.opt.opt.state_dict()},
-            os.path.join(self.save_dir, save_name),
+            Path(self.save_dir) / Path(save_name),
         )
 
 

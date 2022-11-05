@@ -25,6 +25,22 @@ def gpu(data: Any):
     return data
 
 
+def cpu(data):
+    """
+    Transfer tensor in `data` to gpu recursively
+    `data` can be dict, list or tuple
+    :param data: input dict/list/tuple.
+    :returns: the transfered data.
+    """
+    if isinstance(data, list) or isinstance(data, tuple):
+        data = [cpu(x) for x in data]
+    elif isinstance(data, dict):
+        data = {key: cpu(_data) for key, _data in data.items()}
+    elif isinstance(data, torch.Tensor):
+        data = data.contiguous().cpu().numpy().tolist()
+    return data
+
+
 def to_long(data: Any):
     """
     Converts a list/dict/Tensor into a list/dict/Tensor of long.
@@ -238,8 +254,8 @@ class PostProcess(nn.Module):
         post_out["gt_preds"] = [x[0:1].numpy() for x in data["gt_preds"]]
         post_out["has_preds"] = [x[0:1].numpy() for x in data["has_preds"]]
         return post_out
-    
-    def append(self, metrics: Dict, loss_out: Dict, post_out: Optional[Dict[str, List[ndarray]]]=None) -> Dict:
+
+    def append(self, metrics: Dict, loss_out: Dict, post_out: Optional[Dict[str, List[ndarray]]] = None) -> Dict:
         if len(metrics.keys()) == 0:
             for key in loss_out:
                 if key != "loss":
