@@ -406,32 +406,20 @@ class MMDet3DDetector:
 
     def visualize(self, data: dict, result: List[dict],
                   out_dir: str, score_thr: float = 0.0,
-                  show: bool = False, snapshot: bool = False) -> None:
+                  show: bool = True, snapshot: bool = False) -> None:
         """A function wrapper for visualizing the output of the detector model.
 
         :param data: Input points and the information of the sample.
         :param result: Prediction results.
         :param out_dir: Output directory of visualization result.
         :param score_thr: Minimum score of bboxes to be shown. Defaults to 0.0.
-        :param show: Visualize the results online. Defaults to False.
+        :param show: Visualize the results online. Defaults to True.
         :param snapshot: Whether to save the online results. Defaults to False.
         """
         if self.model is None:
             self._build_model()
 
-        method = getattr(self.model, 'show_results', None)
-        if callable(method):
-            # Since show_results may be uniquely implemented for
-            # each model, pass only those parameters that are actually
-            # valid for this specific implementation.
-            valid_keys = inspect.signature(
-                self.model.show_results).parameters.keys()
-            kwargs = {key: value for key, value in locals().items()
-                      if key in valid_keys}
-            print(f"""Parameters passed to 
-                self.model.show_results: {kwargs.keys()}""")
-            self.model.show_results(**kwargs)
-        elif 'img' in data.keys():
+        if 'img' in data.keys():
             show_proj_det_result_meshlab(data, result, out_dir,
                                          score_thr, show, snapshot)
         else:

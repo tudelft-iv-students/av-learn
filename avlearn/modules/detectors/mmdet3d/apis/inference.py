@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
-# Removed: All code related to segmentation 
+# Removed: All code related to segmentation
 # Added: Option for init_model to return Config dict alongside model
 
 from copy import deepcopy
@@ -10,9 +10,9 @@ import mmcv
 import torch
 from mmcv.runner import load_checkpoint
 
-from avlearn.modules.detectors.mmdet3d.core import (Box3DMode, CameraInstance3DBoxes, Coord3DMode,
-                          DepthInstance3DBoxes, LiDARInstance3DBoxes,
-                          show_multi_modality_result, show_result)
+from avlearn.modules.detectors.mmdet3d.core import (
+    Box3DMode, CameraInstance3DBoxes, Coord3DMode, DepthInstance3DBoxes,
+    LiDARInstance3DBoxes, show_multi_modality_result, show_result)
 from avlearn.modules.detectors.mmdet3d.models import build_model
 from avlearn.modules.detectors.mmdet3d.utils import get_root_logger
 
@@ -28,12 +28,13 @@ def convert_SyncBN(config):
         for item in config:
             if item == 'norm_cfg':
                 config[item]['type'] = config[item]['type']. \
-                                    replace('naiveSyncBN', 'BN')
+                    replace('naiveSyncBN', 'BN')
             else:
                 convert_SyncBN(config[item])
 
 
-def init_model(config, checkpoint=None, device='cuda:0', return_config: bool = False):
+def init_model(config, checkpoint=None, device='cuda:0',
+               return_config: bool = False):
     """Initialize a model from config file, which could be a 3D detector or a
     3D segmentor.
 
@@ -73,10 +74,11 @@ def init_model(config, checkpoint=None, device='cuda:0', return_config: bool = F
                        'Some functions are not supported for now.')
     model.to(device)
     model.eval()
-    
+
     if return_config:
-        return model, config    
+        return model, config
     return model
+
 
 def show_det_result_meshlab(data,
                             result,
@@ -92,9 +94,11 @@ def show_det_result_meshlab(data,
     if 'pts_bbox' in result[0].keys():
         pred_bboxes = result[0]['pts_bbox']['boxes_3d'].tensor.numpy()
         pred_scores = result[0]['pts_bbox']['scores_3d'].numpy()
+        pred_labels = result[0]['pts_bbox']['labels_3d']
     else:
         pred_bboxes = result[0]['boxes_3d'].tensor.numpy()
         pred_scores = result[0]['scores_3d'].numpy()
+        pred_labels = result[0]['labels_3d']
 
     # filter out low score bboxes for visualization
     if score_thr > 0:
@@ -116,9 +120,11 @@ def show_det_result_meshlab(data,
         out_dir,
         file_name,
         show=show,
-        snapshot=snapshot)
+        snapshot=snapshot,
+        pred_labels=pred_labels)
 
     return file_name
+
 
 def show_proj_det_result_meshlab(data,
                                  result,

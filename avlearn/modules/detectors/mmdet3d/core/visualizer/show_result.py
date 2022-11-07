@@ -68,7 +68,7 @@ def _write_oriented_bbox(scene_bbox, out_filename):
 
     mesh_list = trimesh.util.concatenate(scene.dump())
     # save to obj file
-    trimesh.io.export.export_mesh(mesh_list, out_filename, file_type='obj')
+    mesh_list.export(out_filename, file_type='obj')
 
     return
 
