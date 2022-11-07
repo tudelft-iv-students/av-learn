@@ -117,12 +117,14 @@ class Evaluator:
                 version=self.kwargs.get("version", 'v1.0-trainval'),
                 verbose=self.kwargs.get("verbose", True),
                 dataroot=self.dataroot)
-            
+
             self.helper = PredictHelper(nusc)
-            
-            config_name = self.kwargs.get('config_name', 'predict_2020_icra.json')
-            self.config: PredictionConfig = load_prediction_config(self.helper, config_name)
-            
+
+            config_name = self.kwargs.get(
+                'config_name', 'predict_2020_icra.json')
+            self.config: PredictionConfig = load_prediction_config(
+                self.helper, config_name)
+
             if not isinstance(self.results, Path):
                 self.results = Path(self.results)
             if not self.results.is_file():
@@ -130,11 +132,11 @@ class Evaluator:
             if not isinstance(self.output, Path):
                 self.output = Path(self.output)
             if not self.output.is_dir():
-                self.output.mkdir()
-            
+                self.output.mkdir(parents=True, exist_ok=True)
+
             filename = str(self.results.stem) + '_metrics.json'
             self.submission_path = self.output / filename
-            
+
             self.predictions = json.load(open(self.results, 'r'))
 
     def __init_kitti(self) -> None:
@@ -157,7 +159,8 @@ class Evaluator:
             return self.evaluator.main(
                 render_curves=self.kwargs.get("render_curves", True))
         else:
-            metrics: Dict[str, Dict[str, List[float]]] = compute_metrics(self.predictions, self.helper, self.config)
+            metrics: Dict[str, Dict[str, List[float]]] = compute_metrics(
+                self.predictions, self.helper, self.config)
             json.dump(metrics, open(self.submission_path, 'w+'), indent=2)
             return metrics
 

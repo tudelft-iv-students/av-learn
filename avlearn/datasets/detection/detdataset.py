@@ -65,12 +65,12 @@ class DetectionDataset(Dataset):
         if start < 0 or end > len(self) - 1:
             return []  # index out of range
         return [self._dataset[i] for i in range(start, end)]
-    
+
     def format_results(self, results: List[dict], **kwargs):
         if self._is_dataset_wrapper:
             return self._dataset.dataset.format_results(results, **kwargs)
         return self._dataset.format_results(results, **kwargs)
-    
+
     @property
     def _is_dataset_wrapper(self) -> bool:
         """
@@ -78,28 +78,28 @@ class DetectionDataset(Dataset):
         mmdet or mmdet3d dataset wrapper.
         """
         import inspect
-        
-        from mmdet3d_datasets import dataset_wrappers as mmdet3d_dataset_wrappers
+
+        from avlearn.datasets.detection.mmdet3d_datasets import dataset_wrappers as mmdet3d_dataset_wrappers
         from mmdet.datasets import dataset_wrappers as mmdet_dataset_wrappers
-        
+
         def _get_module_classes(module) -> list:
             assert inspect.ismodule(module)
-            return [obj for _, obj in inspect.getmembers(module, inspect.isclass) if obj.__module__ == module.__name__]            
-            
+            return [obj for _, obj in inspect.getmembers(module, inspect.isclass) if obj.__module__ == module.__name__]
+
         wrappers = _get_module_classes(mmdet3d_dataset_wrappers)
         wrappers.extend(_get_module_classes(mmdet_dataset_wrappers))
-        
+
         for wrapper in wrappers:
             if isinstance(self._dataset, wrapper):
                 return True
         return False
-    
+
     @property
     def test_mode(self) -> bool:
         if self._is_dataset_wrapper:
             return self._dataset.dataset.test_mode
-        return self._dataset.test_mode    
-    
+        return self._dataset.test_mode
+
     def _validate_timesteps_arg(func: Callable) -> Any:
         def wrapped(self, timesteps: int):
             if not isinstance(timesteps, int):
