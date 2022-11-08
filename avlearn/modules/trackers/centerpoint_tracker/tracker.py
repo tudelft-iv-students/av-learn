@@ -1,39 +1,34 @@
 # This module is implemented on top of https://github.com/tianweiy/CenterPoint
 # open source code base.
 
-import os
-import json
-import numpy as np
-import time
 import copy
+import json
+import os
+import time
+
+import numpy as np
 from nuscenes import NuScenes
 from nuscenes.utils import splits
 from tqdm import tqdm
 
+from avlearn.modules.__base__ import BaseTracker
+
+from .configs.nuscenes import (NUSCENE_CLS_VELOCITY_ERROR,
+                               NUSCENES_TRACKING_CLASSES)
 from .utils import greedy_assignment, linear_assignment
-from .configs.nuscenes import NUSCENES_TRACKING_CLASSES, \
-    NUSCENE_CLS_VELOCITY_ERROR
 
 
-class CenterPointTracker(object):
+class CenterPointTracker(BaseTracker):
     """
     CenterPoint tracker class for av-learn. 
     """
 
     def __init__(self,
-                 data_path: str,
-                 data_version: str,
-                 det_path: str,
-                 save_root: str,
                  match_algorithm: str = "greedy",
                  dataset: str = "nuscenes",
                  max_age: int = 3):
         """
-        Loads the initial CenterPoint tracker parameters.
-        :param data_path: the path to the dataset.
-        :param data_version: the version of the dataset used.
-        :param det_path: path to the json file with the detections.
-        :param save_root: the path to which the results will be saved .
+        Loads the initial CenterPoint tracker parameters.        
         :param match_algorithm: defines the matching algorithm used
                         (Default: "greedy").
         :param dataset: the used dataset (Default: "nuscenes")
@@ -43,24 +38,41 @@ class CenterPointTracker(object):
         if (match_algorithm not in {"hungarian", "greedy"}):
             raise ValueError("match_algorithm takes only values {'hungarian',"
                              "'greedy'}.")
-        self.data_path = data_path
-        self.data_version = data_version
-        self.det_path = det_path
         self.match_algorithm = match_algorithm
         self.dataset = dataset
-        self.save_root = save_root
         self.max_age = max_age
 
-    def forward(self):
+    def forward(self,
+                dataroot: str,
+                data_version: str,
+                det_path: str,
+                work_dir: str,
+                **kwargs):
         """
         Executes the tracking process for each dataset
+
+        :param dataroot: The path to the dataset.
+        :param data_version: The version of the dataset used.
+        :param det_path: Path to the json file with the detections.
+        :param work_dir: The path to which the results will be saved .
         """
         # TODO: add support for multiple datasets
         if self.dataset == "nuscenes":
-            self.track_nuscenes()
+            self.track_nuscenes(dataroot, data_version, det_path, work_dir)
 
-    def track_nuscenes(self):
+    def track_nuscenes(
+            self,
+            dataroot: str,
+            data_version: str,
+            det_path: str,
+            work_dir: str,
+            **kwargs):
         """
+        :param dataroot: The path to the dataset.
+        :param data_version: The version of the dataset used.
+        :param det_path: Path to the json file with the detections.
+        :param work_dir: The path to which the results will be saved.
+
         Outputs the CenterPoint filter tracklets in json format, as specified by
         the nuscenes dataset:
         submission {
@@ -84,15 +96,15 @@ class CenterPointTracker(object):
         """
         # save first item
         # create a Database object for nuScenes
-        nusc = NuScenes(version=self.data_version, dataroot=self.data_path,
+        nusc = NuScenes(version=data_version, dataroot=dataroot,
                         verbose=True)
 
         # select appropriate split, based on version
-        if self.data_version == 'v1.0-trainval':
+        if data_version == 'v1.0-trainval':
             scenes = splits.val
-        elif self.data_version == 'v1.0-test':
+        elif data_version == 'v1.0-test':
             scenes = splits.test
-        elif self.data_version == 'v1.0-mini':
+        elif data_version == 'v1.0-mini':
             scenes = splits.mini_val
         else:
             raise ValueError("unknown")
@@ -121,12 +133,12 @@ class CenterPointTracker(object):
         del nusc
 
         # create result folder
-        res_dir = os.path.join(self.save_root)
+        res_dir = os.path.join(work_dir)
         if not os.path.exists(res_dir):
             os.makedirs(res_dir)
 
         # save frame metadata
-        with open(os.path.join(self.save_root, 'frames_meta.json'), "w") as f:
+        with open(os.path.join(work_dir, 'frames_meta.json'), "w") as f:
             json.dump({'frames': frames}, f)
 
         # initialize a tracker
@@ -134,11 +146,11 @@ class CenterPointTracker(object):
                                 match_algorithm=self.match_algorithm)
 
         # read json file with object detections
-        with open(self.det_path, 'rb') as f:
+        with open(det_path, 'rb') as f:
             detections = json.load(f)['results']
 
         # read json file with frame metadata
-        with open(os.path.join(self.save_root, 'frames_meta.json'), 'rb') as f:
+        with open(os.path.join(work_dir, 'frames_meta.json'), 'rb') as f:
             frames = json.load(f)['frames']
 
         # create dictionary to save the results
@@ -200,12 +212,12 @@ class CenterPointTracker(object):
             "use_external": False,
         }
 
-        res_dir = os.path.join(self.save_root)
+        res_dir = os.path.join(work_dir)
         if not os.path.exists(res_dir):
             os.makedirs(res_dir)
 
         # save tracking results
-        with open(os.path.join(self.save_root, 'tracking_result.json'), "w") \
+        with open(os.path.join(work_dir, 'tracking_result.json'), "w") \
                 as f:
             json.dump(nusc_annos, f)
 

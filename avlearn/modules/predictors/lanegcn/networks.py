@@ -1,54 +1,47 @@
 # Copyright (c) 2020 Uber Technologies, Inc. All rights reserved.
 
-import sys
+import json
 import os
+import sys
 from fractions import gcd
+from pathlib import Path
+from typing import Dict, List, Tuple, Union
+
+import numpy as np
+from mmcv import Config
 import torch
+from layers import Att, AttDest, Conv1d, Linear, LinearRes, Res1d
+from loss import Loss
 from torch import Tensor, nn
 from torch.nn import functional as F
-from utils import gpu, to_long
-from typing import Dict, List, Tuple, Union
-import numpy as np
-from tqdm import tqdm
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+from utils import (Optimizer, PostProcess, collate_fn, cpu, gpu, load_pretrain,
+                   to_long)
 
-from layers import Conv1d, Res1d, Linear, LinearRes, Att, AttDest
-from loss import Loss
-from utils import PostProcess, Optimizer, load_pretrain, collate_fn, cpu
-from avlearn.datasets.prediction.nuscenes_ds import NuScenesDataset as Dataset
-from avlearn.datasets.prediction.nuscenes_ds import InferenceNSDataset
 from avlearn.apis.evaluate import Evaluator
-
-import json
-from pathlib import Path
-
-
-root_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, root_path)
+from avlearn.datasets.prediction.nuscenes_ds import InferenceNSDataset
+from avlearn.datasets.prediction.nuscenes_ds import NuScenesDataset as Dataset
+from avlearn.modules.__base__ import BasePredictor
 
 
-class LaneGCN():
+class LaneGCN(BasePredictor):
     """
-    LaneGCN wrapper class for av-learn. 
+    LaneGCN wrapper class for av-learn.
     """
 
     def __init__(self,
-                 config: dict,
-                 data_root: str,
-                 map_data_root: str,
+                 config: str,
                  resume: bool = False,
-                 checkpoint_pth: str = None):
+                 checkpoint_pth: str = None) -> None:
         """
         Loads the initial LaneGCN parameters, needed for training or inference.
-        :param config: a LaneGCN configuration dictionary
-        :param data_root: the path to the root folder of the data.
-        :param map_data_root: the path to the root folder of the map data.
+        :param config: Path to a LaneGCN configuration file
+
         :param resume: whether to resume from a pre-trained checkpoint.
         :param checkpoint_pth: the path to a ckeckpoint.
         """
-        self.config = config
-        self.data_root = data_root
-        self.map_data_root = map_data_root
+        self.config = Config.fromfile(config)
         self.net = Net(self.config)
         self.net = self.net.cuda()
 
@@ -71,17 +64,21 @@ class LaneGCN():
                 self.config["epoch"] = ckpt["epoch"]
                 self.opt.load_state_dict(ckpt["opt_state"])
 
-        # Create save directory
-        self.save_dir = Path(config["save_dir"])
-        if not self.save_dir.exists():
-            self.save_dir.mkdir(parents=True, exist_ok=True)
-
-    def infer(self, tracking_results: dict) -> List[Dict]:
+    def forward(
+            self,
+            dataroot: Union[str, Path],
+            map_dataroot: Union[str, Path],
+            tracking_results: dict,
+            **kwargs) -> List[Dict]:
         """
         Given a dictionary of tracking results, performs inference on the 
         LaneGCN network.
+
+        :param dataroot: Path to data.
+        :param map_dataroot: the path to the root folder of the map data.
         :param tracking_results: a dictionary containing the tracking results 
                         in the nuScenes format.
+
         :returns: a list containing for each instance-sample token a dictionary 
         of its predicted trajectories:
         [{
@@ -101,9 +98,9 @@ class LaneGCN():
         ]
         """
         # load inference dataset
-        inferrence_dataset = InferenceNSDataset(self.data_root, self.config, tracking_results=tracking_results,
-                                                maps_dir=self.map_data_root,
-                                                split="val")
+        inferrence_dataset = InferenceNSDataset(
+            dataroot, self.config, tracking_results=tracking_results,
+            maps_dir=map_dataroot, split="val")
         self.inferrence_loader = DataLoader(
             inferrence_dataset,
             batch_size=self.config["batch_size"],
@@ -127,9 +124,13 @@ class LaneGCN():
         return results
 
     def evaluate(self,
-                 save_root,
+                 dataroot: Union[str, Path],
+                 map_dataroot: Union[str, Path],
+                 work_dir: Union[str, Path] = None,
+                 batch_size: int = 8,
                  split: str = "val",
-                 version: str = "v1.0-trainval"):
+                 version: str = "v1.0-trainval",
+                 **kwargs) -> None:
         """
         Performs inference on the validation set of nuScenes for the prediction 
         task on the LaneGCN network and saves the results in a json file, 
@@ -152,18 +153,26 @@ class LaneGCN():
         ]
         The inference results are then evaluated using the official nuScenes 
         prediction evaluation, with the evaluation results also being saved.
-        :param save_root: the root directory, where the results will be saved.
+        :param dataroot: Path to data.
+        :param map_dataroot: the path to the root folder of the map data.
+        :param work_dir: Directory to save output.
+        :param batch_size: Number of samples per batch.
         :param split: the nuScenes split (Default: "val")
         :param version: the nuScenes version (Default: "trainval")
         """
+        # Create save directory
+        self.save_dir = Path(self.config.get("save_dir", work_dir))
+        if not self.save_dir.exists():
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+
         # Data loader for evaluation
         self.net.eval()
-        val_dataset = Dataset(self.data_root, self.config,
-                              maps_dir=self.map_data_root,
+        val_dataset = Dataset(dataroot, self.config,
+                              maps_dir=map_dataroot,
                               split=split, train=False)
         self.val_loader = DataLoader(
             val_dataset,
-            batch_size=self.config["val_batch_size"],
+            batch_size=self.config.get("val_batch_size", batch_size),
             num_workers=self.config["val_workers"],
             collate_fn=collate_fn,
             pin_memory=True,
@@ -182,7 +191,7 @@ class LaneGCN():
 
         # convert to json serializable
         infer_results = cpu(results)
-        save_path = Path(save_root)
+        save_path = Path(self.save_dir)
         infer_save_path = save_path / Path("inference_results")
         eval_save_path = save_path / Path("evaluation_results")
         # make save directories for both inference and evaluation results
@@ -198,7 +207,7 @@ class LaneGCN():
             dataset="nuscenes",
             results=infer_save_path / Path("inference_result.json"),
             output=eval_save_path,
-            dataroot=self.data_root,
+            dataroot=dataroot,
             split=split,
             version=version,
             config_path=None,
@@ -209,30 +218,50 @@ class LaneGCN():
 
         evaluator.evaluate()
 
-    def train(self):
+    def train(
+        self,
+        dataroot: Union[str, Path],
+        map_dataroot: Union[str, Path],
+        work_dir: Union[str, Path] = None,
+        epochs: int = 36,
+        batch_size: int = 8,
+        **kwargs
+    ) -> None:
         """
         Performs the training of the LaneGCN network.
+
+        :param dataroot: Path to data.
+        :param map_dataroot: the path to the root folder of the map data.
+        :param work_dir: Directory to save output.
+        :param epochs: Number of epochs to train the network.
+        :param batch_size: Number of samples per batch.
         """
         # Data loader for training
-        train_dataset = Dataset(self.data_root, self.config,
-                                maps_dir=self.map_data_root,
+        train_dataset = Dataset(dataroot, self.config,
+                                maps_dir=map_dataroot,
                                 split="train", train=True)
         self.train_loader = DataLoader(
             train_dataset,
-            batch_size=self.config["batch_size"],
+            batch_size=self.config.get("batch_size", batch_size),
             num_workers=self.config["workers"],
             collate_fn=collate_fn,
             pin_memory=True,
             shuffle=True,
         )
 
-        epoch = self.config["epoch"]
+        # Create save directory
+        self.save_dir = Path(self.config.get("save_dir", work_dir))
+        if not self.save_dir.exists():
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+
+        epoch = self.config.get("epoch", 0)
         # find remaining epochs
-        self.remaining_epochs = int(np.ceil(self.config["num_epochs"] - epoch))
+        self.remaining_epochs = int(
+            np.ceil(self.config.get("num_epochs", epochs) - epoch))
         for i in tqdm(range(self.remaining_epochs)):
             self.__train_epoch(epoch + i)
 
-    def __train_epoch(self, epoch):
+    def __train_epoch(self, epoch: int) -> None:
         """
         Performs the training of a single epoch of the LaneGCN network.
         :param epoch: the current epoch to be trained.
@@ -261,7 +290,7 @@ class LaneGCN():
         self.__save_ckpt(epoch)
         return
 
-    def __save_ckpt(self, epoch):
+    def __save_ckpt(self, epoch: int) -> None:
         """
         Saves a checkpoint for the LaneGCN network on a specific epoch.
         :param epoch: the current train epoch of the model.
@@ -302,7 +331,7 @@ class Net(nn.Module):
            feature from A2A
     """
 
-    def __init__(self, config: str):
+    def __init__(self, config: str) -> None:
         """
         Initializes the LaneGCN network given a configuration file.
         :param config: the path to the network's configuration file
@@ -662,12 +691,17 @@ class A2M(nn.Module):
         self.att = nn.ModuleList(att)
 
     # self.a2m(nodes, graph, actors, actor_idcs, actor_ctrs)
-    def forward(self,
-                feat: Tensor,
-                graph: Dict[str, Union[List[Tensor], Tensor, List[Dict[str, Tensor]], Dict[str, Tensor]]],
-                actors: Tensor,
-                actor_idcs: List[Tensor],
-                actor_ctrs: List[Tensor]) -> Tensor:
+    def forward(
+            self, feat: Tensor,
+            graph:
+            Dict
+            [str,
+             Union
+             [List[Tensor],
+              Tensor, List[Dict[str, Tensor]],
+              Dict[str, Tensor]]],
+            actors: Tensor, actor_idcs: List[Tensor],
+            actor_ctrs: List[Tensor]) -> Tensor:
         """
         Performs a forward pass of the A2M network.
         :param feat: the lane nodes feature map [N x n_map] (output of MapNet)
@@ -890,7 +924,8 @@ class PredNet(nn.Module):
     Class for the final motion forecasting with Linear Residual block.
     """
 
-    def __init__(self, num_mods: int, n_actor: int, num_preds: int, config: str):
+    def __init__(self, num_mods: int, n_actor: int, num_preds: int,
+                 config: str):
         """
         Intilializes the prediction network. 
         :param n_mods: the number of predicted trajectories.

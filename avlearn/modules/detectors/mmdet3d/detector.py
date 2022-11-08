@@ -1,7 +1,6 @@
 from __future__ import division
 
 import copy
-import inspect
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Union
@@ -15,10 +14,10 @@ from mmdet import __version__ as mmdet_version
 from mmdet.datasets import replace_ImageToTensor
 from tqdm import tqdm
 
-from avlearn.datasets.detection.detdataset import DetectionDataset
 from avlearn.datasets.detection.mmdet3d_datasets import (build_dataloader,
                                                          build_dataset)
 from avlearn.datasets.detection.mmdet3d_datasets.pipelines import Compose
+from avlearn.modules.__base__ import BaseDetector
 from avlearn.modules.detectors.mmdet3d import __version__ as mmdet3d_version
 from avlearn.modules.detectors.mmdet3d.apis.inference import (
     show_det_result_meshlab, show_proj_det_result_meshlab)
@@ -35,7 +34,7 @@ from avlearn.modules.detectors.mmdet3d.utils.detector import (
     convert_SyncBN, update_data_paths)
 
 
-class MMDet3DDetector:
+class MMDet3DDetector(BaseDetector):
     def __init__(
             self, cfg: Config, checkpoint: str = None,
             model_name=None, device=None) -> None:
@@ -165,7 +164,8 @@ class MMDet3DDetector:
             autoscale_lr: bool = False,
             random_seed: int = None,
             deterministic: bool = False,
-            validate: bool = True) -> None:
+            validate: bool = True,
+            **kwargs) -> None:
         """Train the detector.
 
         :param dataroot: Path to data.

@@ -9,27 +9,25 @@ import time
 from pathlib import Path
 
 import numpy as np
-from avlearn.datasets.detection.nuscenes_ds import NuScenesDataset
+from ab3d_mot_tracker import AB3DMOT
+from configs.nuscenes import NUSCENES_TRACKING_CLASSES
 from nuscenes import NuScenes
 from nuscenes.eval.common.data_classes import EvalBoxes
 from nuscenes.eval.detection.data_classes import DetectionBox
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-from ab3d_mot_tracker import AB3DMOT
-from configs.nuscenes import NUSCENES_TRACKING_CLASSES
+from avlearn.datasets.detection.nuscenes_ds import NuScenesDataset
+from avlearn.modules.__base__.tracker import BaseTracker
 
 
-class KalmanTracker(object):
+class KalmanTracker(BaseTracker):
     """
     Kalman tracker class for av-learn. 
     """
 
     def __init__(self,
-                 data_cfg_path: str,
                  cfg_path: str,
-                 det_path: str,
-                 save_root: str,
                  match_distance: str = "iou",
                  match_threshold: float = 0.1,
                  match_algorithm: str = "hungarian",
@@ -38,11 +36,8 @@ class KalmanTracker(object):
                  min_hits: int = 3):
         """
         Loads the initial Kalman tracker parameters.
-        :param data_cfg_path: the path to the dataset configuration file
         :param cfg_path: path to configuration file for Kalman filter covariance
                      matrices
-        :param det_path: path to the json file with the detections
-        :param save_root: the path to which the results will be saved 
         :param match_distance: defines the mathcing distance used, either iou or
                         mahalanobis (Default: "iou")
         :param match_threshold: defines the matching threshold used in the 
@@ -61,27 +56,47 @@ class KalmanTracker(object):
         if (match_algorithm not in {"hungarian", "greedy", "hungarian_thres"}):
             raise ValueError("match_algorithm takes only values {'hungarian',"
                              "'greedy', 'hungarian_thres'}.")
-        self.data_cfg_path = data_cfg_path
+
         self.cfg_path = cfg_path
-        self.det_path = det_path
         self.match_distance = match_distance
         self.match_threshold = match_threshold
         self.match_algorithm = match_algorithm
         self.dataset = dataset
-        self.save_root = save_root
         self.max_age = max_age
         self.min_hits = min_hits
 
-    def forward(self):
+    def forward(
+            self,
+            dataroot: str,
+            data_version: str,
+            det_path: str,
+            work_dir: str,
+            **kwargs):
         """
+        :param dataroot: The path to the dataset.
+        :param data_version: The version of the dataset used.
+        :param det_path: Path to the json file with the detections.
+        :param work_dir: The path to which the results will be saved.
+
         Executes the Kalman tracking process for each dataset
         """
         # TODO: add support for multiple datasets
         if self.dataset == "nuscenes":
             self.track_nuscenes()
 
-    def track_nuscenes(self):
+    def track_nuscenes(
+            self,
+            dataroot: str,
+            data_version: str,
+            det_path: str,
+            work_dir: str,
+            **kwargs):
         """
+        :param dataroot: The path to the dataset.
+        :param data_version: The version of the dataset used.
+        :param det_path: Path to the json file with the detections.
+        :param work_dir: The path to which the results will be saved.
+
         Outputs the Kalman filter tracklets in json format, as specified by the 
         nuscenes dataset:
         submission {
@@ -103,21 +118,16 @@ class KalmanTracker(object):
             }
         }
         """
-        detection_file = self.det_path
-
-        # get dataset
-        nusc_dataset = NuScenesDataset(self.data_cfg_path)
+        detection_file = det_path
 
         # create directory folder for the results
-        version = nusc_dataset._dataset.version
-        data_root = nusc_dataset._dataset.data_root
-        save_dir = Path(self.save_root)
+        save_dir = Path(work_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
         print("Results saved in:", save_dir)
         output_path = save_dir / "tracking_result.json"
 
         # create a Database object for nuScenes
-        nusc = NuScenes(version=version, dataroot=data_root, verbose=True)
+        nusc = NuScenes(version=data_version, dataroot=dataroot, verbose=True)
 
         results = {}
         total_time = 0.0
