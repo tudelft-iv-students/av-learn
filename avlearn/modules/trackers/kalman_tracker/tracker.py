@@ -7,48 +7,51 @@ from __future__ import print_function
 import json
 import time
 from pathlib import Path
+from typing import Any, Dict, Union
 
 import numpy as np
-from ab3d_mot_tracker import AB3DMOT
-from configs.nuscenes import NUSCENES_TRACKING_CLASSES
+from .ab3d_mot_tracker import AB3DMOT
+from .configs.nuscenes import NUSCENES_TRACKING_CLASSES
 from nuscenes import NuScenes
 from nuscenes.eval.common.data_classes import EvalBoxes
 from nuscenes.eval.detection.data_classes import DetectionBox
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-from avlearn.datasets.detection.nuscenes_ds import NuScenesDataset
+from avlearn.apis.evaluate import Evaluator
 from avlearn.modules.__base__.tracker import BaseTracker
+
+DEFAULT_CFG = "configs/covariance_base.py"
 
 
 class KalmanTracker(BaseTracker):
     """
-    Kalman tracker class for av-learn. 
+    Kalman tracker class for av-learn.
     """
 
     def __init__(self,
-                 cfg_path: str,
                  match_distance: str = "iou",
                  match_threshold: float = 0.1,
                  match_algorithm: str = "hungarian",
                  dataset: str = "nuscenes",
+                 cfg_path: Union[str, Path] = None,
                  max_age: int = 2,
                  min_hits: int = 3):
         """
         Loads the initial Kalman tracker parameters.
-        :param cfg_path: path to configuration file for Kalman filter covariance
-                     matrices
-        :param match_distance: defines the mathcing distance used, either iou or
-                        mahalanobis (Default: "iou")
-        :param match_threshold: defines the matching threshold used in the 
-                        hungarian algorithm (Default: 0.1)
+        :param match_distance: defines the mathcing distance used, either iou 
+                    or mahalanobis (Default: "iou")
+        :param match_threshold: defines the matching threshold used in the
+                    hungarian algorithm (Default: 0.1)
         :param match_algorithm: defines the matching algorithm used
-                        (Default: "hungarian")
+                    (Default: "hungarian")
         :param dataset: the used dataset (Default: "nuscenes")
-        :param max_age: the maximum number frames allowed for a tracker to have 
+        :param cfg_path: path to configuration file for Kalman filter 
+                    covariance matrices
+        :param max_age: the maximum number frames allowed for a tracker to have
                         no matches before being deactivated
-        :param min_hits: the minimum number matches allowed for a tracker before 
-                    being activated
+        :param min_hits: the minimum number matches allowed for a tracker 
+                    before being activated
         """
         if (match_distance not in {"iou", "mahalanobis"}):
             raise ValueError("match_distance takes only values {'iou',"
@@ -57,7 +60,12 @@ class KalmanTracker(BaseTracker):
             raise ValueError("match_algorithm takes only values {'hungarian',"
                              "'greedy', 'hungarian_thres'}.")
 
-        self.cfg_path = cfg_path
+        if cfg_path is not None:
+            self.cfg_path = cfg_path
+        else:
+            self.cfg_path = str(Path(
+                __file__).parent / DEFAULT_CFG)
+
         self.match_distance = match_distance
         self.match_threshold = match_threshold
         self.match_algorithm = match_algorithm
@@ -67,53 +75,55 @@ class KalmanTracker(BaseTracker):
 
     def forward(
             self,
-            dataroot: str,
-            data_version: str,
-            det_path: str,
-            work_dir: str,
+            dataroot: Union[str, Path],
+            work_dir: Union[str, Path],
+            det_path: Union[str, Path],
+            data_version: str = "v1.0-trainval",
             **kwargs):
         """
         :param dataroot: The path to the dataset.
-        :param data_version: The version of the dataset used.
-        :param det_path: Path to the json file with the detections.
         :param work_dir: The path to which the results will be saved.
+        :param det_path: Path to the json file with the detections.
+        :param data_version: The version of the dataset used.
 
         Executes the Kalman tracking process for each dataset
         """
         # TODO: add support for multiple datasets
         if self.dataset == "nuscenes":
-            self.track_nuscenes()
+            self.track_nuscenes(dataroot, work_dir,
+                                det_path, data_version, **kwargs)
 
     def track_nuscenes(
             self,
-            dataroot: str,
-            data_version: str,
-            det_path: str,
-            work_dir: str,
-            **kwargs):
+            dataroot: Union[str, Path],
+            work_dir: Union[str, Path],
+            det_path: Union[str, Path],
+            data_version: str = "v1.0-trainval",
+            save: bool = True) -> Dict[str, Any]:
         """
         :param dataroot: The path to the dataset.
-        :param data_version: The version of the dataset used.
-        :param det_path: Path to the json file with the detections.
         :param work_dir: The path to which the results will be saved.
+        :param det_path: Path to the json file with the detections.
+        :param data_version: The version of the dataset used.
+        :param save: Whether to save the tracking results.
 
-        Outputs the Kalman filter tracklets in json format, as specified by the 
+        Outputs the Kalman filter tracklets in json format, as specified by the
         nuscenes dataset:
         submission {
             "meta": {
-                "use_camera":   <bool>  -- Whether this submission uses camera 
+                "use_camera":   <bool>  -- Whether this submission uses camera
                                            data as an input.
-                "use_lidar":    <bool>  -- Whether this submission uses lidar 
+                "use_lidar":    <bool>  -- Whether this submission uses lidar
                                            data as an input.
-                "use_radar":    <bool>  -- Whether this submission uses radar 
+                "use_radar":    <bool>  -- Whether this submission uses radar
                                            data as an input.
-                "use_map":      <bool>  -- Whether this submission uses map data 
-                                           as an input.
-                "use_external": <bool>  -- Whether this submission uses external 
+                "use_map":      <bool>  -- Whether this submission uses map 
                                            data as an input.
+                "use_external": <bool>  -- Whether this submission uses 
+                                           external data as an input.
             },
             "results": {
-                sample_token <str>: List[sample_result] -- Maps each 
+                sample_token <str>: List[sample_result] -- Maps each
                                     sample_token to a list of sample_results.
             }
         }
@@ -121,10 +131,14 @@ class KalmanTracker(BaseTracker):
         detection_file = det_path
 
         # create directory folder for the results
-        save_dir = Path(work_dir)
+        if work_dir is not None:
+            save_dir = Path(work_dir)
+        else:
+            save_dir = Path(f"results")
+
         save_dir.mkdir(parents=True, exist_ok=True)
         print("Results saved in:", save_dir)
-        output_path = save_dir / "tracking_result.json"
+        output_path = save_dir / "trackings/kalman/tracking_result.json"
 
         # create a Database object for nuScenes
         nusc = NuScenes(version=data_version, dataroot=dataroot, verbose=True)
@@ -244,8 +258,9 @@ class KalmanTracker(BaseTracker):
         # finished tracking all scenes, write output data
         output_data = {'meta': meta, 'results': results}
 
-        with open(output_path, 'w') as outfile:
-            json.dump(output_data, outfile)
+        if save:
+            with open(output_path, 'w') as outfile:
+                json.dump(output_data, outfile)
 
         print("Total Number of frames processed from detection file: {}"
               .format(total_frames))
@@ -256,12 +271,93 @@ class KalmanTracker(BaseTracker):
         print("Total Tracking took: {} or {} FPS"
               .format(total_time, total_frames/total_time))
 
+        return output_data
+
+    def evaluate(self,
+                 dataroot: Union[str, Path],
+                 work_dir: Union[str, Path],
+                 track_path: Union[str, Path] = None,
+                 det_path: Union[str, Path] = None,
+                 data_version: str = "v1.0-trainval",
+                 split: str = "val",
+                 **kwargs) -> None:
+        """
+        :param dataroot: The path to the dataset.
+        :param work_dir: The path to which the results will be saved.
+        :param track_path: Path to the json file with the trackings.
+        :param det_path: Path to the json file with the detections.
+        :param data_version: The version of the dataset used.
+        :param split: Which dataset split to use.
+
+        Executes the Kalman evaluation process for each dataset.
+        """
+        print("Evaluating tracking module")
+        if self.dataset == "nuscenes":
+            self.__evaluate_nuscenes(
+                dataroot, work_dir, track_path, det_path,
+                data_version, split)
+
+    def __evaluate_nuscenes(self,
+                            dataroot: Union[str, Path],
+                            work_dir: Union[str, Path],
+                            track_path: Union[str, Path] = None,
+                            det_path: Union[str, Path] = None,
+                            data_version: str = "v1.0-trainval",
+                            split: str = "val") -> None:
+        """
+        :param dataroot: The path to the dataset.
+        :param work_dir: The path to which the results will be saved.
+        :param track_path: Path to the json file with the trackings.
+        :param det_path: Path to the json file with the detections.
+        :param data_version: The version of the dataset used.
+        :param split: Which dataset split to use.
+
+        Executes the Kalman evaluation process for nuScenes.
+        """
+        if track_path is None:
+            if det_path is None:
+                print(
+                    "Please specify a path to the detection results "
+                    "('det_path') or to the tracking results ('track_path') "
+                    "to be evaluated when calling the evaluate method."
+                )
+                exit()
+            else:
+                self.track_nuscenes(
+                    dataroot=dataroot,
+                    data_version=data_version,
+                    det_path=det_path,
+                    work_dir=work_dir)
+
+        track_path = track_path if track_path is not None else Path(
+            work_dir) / "trackings/kalman/tracking_result.json"
+
+        if work_dir is None:
+            work_dir = "results"
+        save_path = Path(work_dir) / "evaluations/tracking/kalman/"
+
+        evaluator = Evaluator(
+            task="tracking",
+            dataset="nuscenes",
+            results=track_path,
+            output=save_path,
+            dataroot=dataroot,
+            split=split,
+            version=data_version,
+            config_path=None,
+            verbose=True,
+            render_classes=None,
+            render_curves=False,
+            plot_examples=0)
+
+        evaluator.evaluate()
+
 
 def format_sample_result(sample_token: str,
                          tracking_name: str,
                          tracker: np.ndarray) -> dict:
     """
-    Takes as input a tracking bounding box and produces a sample result 
+    Takes as input a tracking bounding box and produces a sample result
     dictionary in the nuscenes format.
     :param sample_token: the sample/keyframe associated with this bounding box
     :param tracking_name: predicted class for this sample_result, e.g. car,
@@ -270,31 +366,33 @@ def format_sample_result(sample_token: str,
     :return: dictionary in format:
 
     sample_result {
-        "sample_token":   <str>       -- Foreign key. Identifies the sample/ 
-                                         keyframe for which objects are detected.
-        "translation":    <float> [3] -- Estimated bounding box location in 
-                                         meters in the global frame: center_x, 
+        "sample_token":   <str>       -- Foreign key. Identifies the sample/
+                                         keyframe for which objects are 
+                                         detected.
+        "translation":    <float> [3] -- Estimated bounding box location in
+                                         meters in the global frame: center_x,
                                          center_y, center_z.
         "size":           <float> [3] -- Estimated bounding box size in meters:
                                          width, length, height.
-        "rotation":       <float> [4] -- Estimated bounding box orientation as 
-                                         quaternion in the global frame: w, x, 
+        "rotation":       <float> [4] -- Estimated bounding box orientation as
+                                         quaternion in the global frame: w, x,
                                          y, z.
-        "velocity":       <float> [2] -- Estimated bounding box velocity in m/s 
+        "velocity":       <float> [2] -- Estimated bounding box velocity in m/s
                                          in the global frame: vx, vy.
-        "tracking_id":    <str>       -- Unique object id that is used to 
-                                         identify an object track across samples.
-        "tracking_name":  <str>       -- The predicted class for this 
-                                         sample_result, e.g. car, pedestrian. 
-                                         Note that the tracking_name cannot 
+        "tracking_id":    <str>       -- Unique object id that is used to
+                                         identify an object track across 
+                                         samples.
+        "tracking_name":  <str>       -- The predicted class for this
+                                         sample_result, e.g. car, pedestrian.
+                                         Note that the tracking_name cannot
                                          change throughout a track.
-        "tracking_score": <float>     -- Object prediction score between 0 and 1
-                                         for the class identified by 
-                                         tracking_name. We average over frame 
-                                         level scores to compute the track level 
-                                         score. The score is used to determine 
-                                         positive and negative tracks via 
-                                         thresholding.
+        "tracking_score": <float>     -- Object prediction score between 0 and 
+                                         1 for the class identified by
+                                         tracking_name. We average over frame
+                                         level scores to compute the track 
+                                         level score. The score is used to 
+                                         determine positive and negative tracks
+                                         via thresholding.
 }
     """
     rotation = Quaternion(axis=[0, 0, 1], angle=tracker[6]).elements

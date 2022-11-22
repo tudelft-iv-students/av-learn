@@ -3,14 +3,16 @@
 
 import copy
 import json
-import os
 import time
+from pathlib import Path
+from typing import Any, Dict, Union
 
 import numpy as np
 from nuscenes import NuScenes
 from nuscenes.utils import splits
 from tqdm import tqdm
 
+from avlearn.apis.evaluate import Evaluator
 from avlearn.modules.__base__ import BaseTracker
 
 from .configs.nuscenes import (NUSCENE_CLS_VELOCITY_ERROR,
@@ -20,7 +22,7 @@ from .utils import greedy_assignment, linear_assignment
 
 class CenterPointTracker(BaseTracker):
     """
-    CenterPoint tracker class for av-learn. 
+    CenterPoint tracker class for av-learn.
     """
 
     def __init__(self,
@@ -28,11 +30,11 @@ class CenterPointTracker(BaseTracker):
                  dataset: str = "nuscenes",
                  max_age: int = 3):
         """
-        Loads the initial CenterPoint tracker parameters.        
+        Loads the initial CenterPoint tracker parameters.
         :param match_algorithm: defines the matching algorithm used
                         (Default: "greedy").
         :param dataset: the used dataset (Default: "nuscenes")
-        :param max_age: the maximum number frames allowed for a tracker to have 
+        :param max_age: the maximum number frames allowed for a tracker to have
                         no matches before being deactivated (Default: 3).
         """
         if (match_algorithm not in {"hungarian", "greedy"}):
@@ -43,53 +45,53 @@ class CenterPointTracker(BaseTracker):
         self.max_age = max_age
 
     def forward(self,
-                dataroot: str,
-                data_version: str,
-                det_path: str,
-                work_dir: str,
+                dataroot: Union[str, Path],
+                det_path: Union[str, Path],
+                work_dir: Union[str, Path] = None,
+                data_version: str = "v1.0-trainval",
                 **kwargs):
         """
         Executes the tracking process for each dataset
 
         :param dataroot: The path to the dataset.
-        :param data_version: The version of the dataset used.
         :param det_path: Path to the json file with the detections.
         :param work_dir: The path to which the results will be saved .
+        :param data_version: The version of the dataset used.
         """
         # TODO: add support for multiple datasets
         if self.dataset == "nuscenes":
-            self.track_nuscenes(dataroot, data_version, det_path, work_dir)
+            self.track_nuscenes(dataroot, det_path, work_dir, data_version)
 
     def track_nuscenes(
             self,
-            dataroot: str,
-            data_version: str,
-            det_path: str,
-            work_dir: str,
-            **kwargs):
+            dataroot: Union[str, Path],
+            det_path: Union[str, Path],
+            work_dir: Union[str, Path],
+            data_version: str = "v1.0-trainval",
+            save: bool = True) -> Dict[str, Any]:
         """
         :param dataroot: The path to the dataset.
-        :param data_version: The version of the dataset used.
         :param det_path: Path to the json file with the detections.
         :param work_dir: The path to which the results will be saved.
+        :param data_version: The version of the dataset used.
 
         Outputs the CenterPoint filter tracklets in json format, as specified by
         the nuscenes dataset:
         submission {
             "results": {
-                sample_token <str>: List[sample_result] -- Maps each 
+                sample_token <str>: List[sample_result] -- Maps each
                                     sample_token to a list of sample_results.
             },
             "meta": {
-                "use_camera":   <bool>  -- Whether this submission uses camera 
+                "use_camera":   <bool>  -- Whether this submission uses camera
                                            data as an input.
-                "use_lidar":    <bool>  -- Whether this submission uses lidar 
+                "use_lidar":    <bool>  -- Whether this submission uses lidar
                                            data as an input.
-                "use_radar":    <bool>  -- Whether this submission uses radar 
+                "use_radar":    <bool>  -- Whether this submission uses radar
                                            data as an input.
-                "use_map":      <bool>  -- Whether this submission uses map data 
+                "use_map":      <bool>  -- Whether this submission uses map data
                                            as an input.
-                "use_external": <bool>  -- Whether this submission uses external 
+                "use_external": <bool>  -- Whether this submission uses external
                                            data as an input.
             }
         }
@@ -133,12 +135,14 @@ class CenterPointTracker(BaseTracker):
         del nusc
 
         # create result folder
-        res_dir = os.path.join(work_dir)
-        if not os.path.exists(res_dir):
-            os.makedirs(res_dir)
+        if work_dir is None:
+            res_dir = Path("results/trackings/centerpoint/")
+        else:
+            res_dir = Path(work_dir) / "trackings/centerpoint/"
+        res_dir.mkdir(parents=True, exist_ok=True)
 
         # save frame metadata
-        with open(os.path.join(work_dir, 'frames_meta.json'), "w") as f:
+        with open(res_dir / 'frames_meta.json', "w") as f:
             json.dump({'frames': frames}, f)
 
         # initialize a tracker
@@ -150,7 +154,7 @@ class CenterPointTracker(BaseTracker):
             detections = json.load(f)['results']
 
         # read json file with frame metadata
-        with open(os.path.join(work_dir, 'frames_meta.json'), 'rb') as f:
+        with open(res_dir / 'frames_meta.json', 'rb') as f:
             frames = json.load(f)['frames']
 
         # create dictionary to save the results
@@ -212,17 +216,95 @@ class CenterPointTracker(BaseTracker):
             "use_external": False,
         }
 
-        res_dir = os.path.join(work_dir)
-        if not os.path.exists(res_dir):
-            os.makedirs(res_dir)
-
         # save tracking results
-        with open(os.path.join(work_dir, 'tracking_result.json'), "w") \
+        with open(res_dir / 'tracking_result.json', "w") \
                 as f:
             json.dump(nusc_annos, f)
 
         print("Total Tracking took: {} or {} FPS"
               .format(total_time, speed))
+
+        return nusc_annos
+
+    def evaluate(
+            self,
+            dataroot: Union[str, Path],
+            work_dir: Union[str, Path],
+            track_path: Union[str, Path] = None,
+            det_path: Union[str, Path] = None,
+            data_version: str = "v1.0-trainval",
+            split: str = "val",
+            **kwargs) -> None:
+        """
+        :param dataroot: The path to the dataset.
+        :param work_dir: The path to which the results will be saved.
+        :param track_path: Path to the json file with the trackings.
+        :param det_path: Path to the json file with the detections.
+        :param data_version: The version of the dataset used.
+        :param split: Which dataset split to use.
+
+        Executes the CenterPointTracker evaluation process for each dataset.
+        """
+        print("Evaluating tracking module...")
+        if self.dataset == "nuscenes":
+            self.__evaluate_nuscenes(
+                dataroot, work_dir, track_path, det_path,
+                data_version, split)
+
+    def __evaluate_nuscenes(self,
+                            dataroot: Union[str, Path],
+                            work_dir: Union[str, Path],
+                            track_path: Union[str, Path] = None,
+                            det_path: Union[str, Path] = None,
+                            data_version: str = "v1.0-trainval",
+                            split: str = "val") -> None:
+        """
+        :param dataroot: The path to the dataset.
+        :param work_dir: The path to which the results will be saved.
+        :param track_path: Path to the json file with the trackings.
+        :param det_path: Path to the json file with the detections.
+        :param data_version: The version of the dataset used.
+        :param split: Which dataset split to use.
+
+        Executes the CenterPointTracker evaluation process for nuScenes.
+        """
+        if track_path is None:
+            if det_path is None:
+                print(
+                    "Please specify a path to the detection results "
+                    "('det_path') or to the tracking results ('track_path') "
+                    "to be evaluated when calling the evaluate method."
+                )
+                exit()
+            else:
+                self.track_nuscenes(
+                    dataroot=dataroot,
+                    data_version=data_version,
+                    det_path=det_path,
+                    work_dir=work_dir)
+
+        track_path = track_path if track_path is not None else Path(
+            work_dir) / "trackings/centerpoint/tracking_result.json"
+
+        if work_dir is None:
+            work_dir = "results"
+        save_path = Path(work_dir) / "evaluations/tracking/centerpoint/"
+
+        evaluator = Evaluator(
+            task="tracking",
+            dataset="nuscenes",
+            results=track_path,
+            output=save_path,
+            dataroot=dataroot,
+            split=split,
+            version=data_version,
+            config_path=None,
+            verbose=True,
+            render_classes=None,
+            render_curves=False,
+            plot_examples=0)
+
+        evaluator.evaluate()
 
 
 class CenterTracker(object):
