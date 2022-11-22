@@ -1,9 +1,10 @@
 from __future__ import division
 
 import copy
+import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import torch
@@ -117,7 +118,7 @@ class MMDet3DDetector(BaseDetector):
         if work_dir is not None:
             self.cfg.work_dir = work_dir
         elif self.cfg.get('work_dir', None) is None:
-            self.cfg.work_dir = f"results/{self.model_name}/training/"
+            self.cfg.work_dir = f"results/{self.model_name}/"
 
         # Create work dir if it does not already exist
         Path(self.cfg.work_dir).mkdir(parents=True, exist_ok=True)
@@ -342,8 +343,10 @@ class MMDet3DDetector(BaseDetector):
                  batch_size: int = 16,
                  gpu_ids: Union[int, List[int]] = 0,
                  random_seed: int = None,
-                 deterministic: bool = False) -> None:
-
+                 deterministic: bool = False,
+                 save=True,
+                 ** kwargs) -> Tuple[Dict, Dict]:
+        print("Evaluating detection module...")
         # Set multi-process settings
         setup_multi_processes(self.cfg)
 
@@ -401,8 +404,19 @@ class MMDet3DDetector(BaseDetector):
         self.model = MMDataParallel(self.model, device_ids=self.cfg.gpu_ids)
         results = single_gpu_test(self.model, data_loader)
 
-        return dataset.format_results(
+        eval_results = dataset.evaluate(results)
+        if save:
+            save_path = Path(self.cfg.work_dir) / "evaluation_results.json"
+            with open(save_path, "w") as f:
+                json.dump(eval_results, f)
+
+        file_path, _ = dataset.format_results(
             results, jsonfile_prefix=self.cfg.work_dir)
+
+        with open(file_path['pts_bbox'], "r") as f:
+            formatted_results = json.load(f)
+
+        return eval_results, formatted_results
 
     def visualize(self, data: dict, result: List[dict],
                   out_dir: str, score_thr: float = 0.0,
