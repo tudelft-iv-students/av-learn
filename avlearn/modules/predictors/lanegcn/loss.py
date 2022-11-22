@@ -3,7 +3,7 @@
 import torch
 from torch import nn, Tensor
 from typing import Dict, List, Union
-from utils import gpu
+from .utils import gpu
 
 
 class Loss(nn.Module):

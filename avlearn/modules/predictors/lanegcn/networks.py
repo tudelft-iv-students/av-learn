@@ -2,27 +2,29 @@
 
 import json
 import os
-import sys
 from fractions import gcd
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 import numpy as np
-from mmcv import Config
 import torch
-from layers import Att, AttDest, Conv1d, Linear, LinearRes, Res1d
-from loss import Loss
+from mmcv import Config
 from torch import Tensor, nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import (Optimizer, PostProcess, collate_fn, cpu, gpu, load_pretrain,
-                   to_long)
 
 from avlearn.apis.evaluate import Evaluator
 from avlearn.datasets.prediction.nuscenes_ds import InferenceNSDataset
 from avlearn.datasets.prediction.nuscenes_ds import NuScenesDataset as Dataset
 from avlearn.modules.__base__ import BasePredictor
+
+from .layers import Att, AttDest, Conv1d, Linear, LinearRes, Res1d
+from .loss import Loss
+from .utils import (Optimizer, PostProcess, collate_fn, cpu, gpu,
+                    load_pretrain, to_long)
+
+DEFAULT_CFG = "configs/base.py"
 
 
 class LaneGCN(BasePredictor):
@@ -31,7 +33,7 @@ class LaneGCN(BasePredictor):
     """
 
     def __init__(self,
-                 config: str,
+                 config: Union[str, Path] = None,
                  resume: bool = False,
                  checkpoint_pth: str = None) -> None:
         """
@@ -41,6 +43,10 @@ class LaneGCN(BasePredictor):
         :param resume: whether to resume from a pre-trained checkpoint.
         :param checkpoint_pth: the path to a ckeckpoint.
         """
+        if config is None:
+            config = Path(
+                __file__).parent / DEFAULT_CFG
+
         self.config = Config.fromfile(config)
         self.net = Net(self.config)
         self.net = self.net.cuda()
@@ -50,13 +56,13 @@ class LaneGCN(BasePredictor):
 
         self.params = self.net.parameters()
         self.opt = Optimizer(self.params, self.config)
-        self.seed = config["seed"]
+        self.seed = self.config["seed"]
         torch.cuda.manual_seed(self.seed)
 
         if checkpoint_pth is not None:
             if not os.path.isabs(checkpoint_pth):
                 checkpoint_pth = Path(
-                    config["save_dir"]) / Path(checkpoint_pth)
+                    self.config["save_dir"]) / Path(checkpoint_pth)
             ckpt = torch.load(
                 checkpoint_pth, map_location=lambda storage, loc: storage)
             load_pretrain(self.net, ckpt["state_dict"])
@@ -103,7 +109,7 @@ class LaneGCN(BasePredictor):
             maps_dir=map_dataroot, split="val")
         self.inferrence_loader = DataLoader(
             inferrence_dataset,
-            batch_size=self.config["batch_size"],
+            batch_size=8,
             num_workers=self.config["workers"],
             collate_fn=collate_fn,
             pin_memory=True,
@@ -160,10 +166,13 @@ class LaneGCN(BasePredictor):
         :param split: the nuScenes split (Default: "val")
         :param version: the nuScenes version (Default: "trainval")
         """
+        print("Evaluating prediction module...")
         # Create save directory
-        self.save_dir = Path(self.config.get("save_dir", work_dir))
-        if not self.save_dir.exists():
-            self.save_dir.mkdir(parents=True, exist_ok=True)
+        if work_dir is not None:
+            save_dir = Path(work_dir)
+        else:
+            save_dir = Path(f"results")
+        self.save_dir = Path(self.config.get("save_dir", save_dir))
 
         # Data loader for evaluation
         self.net.eval()
@@ -172,7 +181,7 @@ class LaneGCN(BasePredictor):
                               split=split, train=False)
         self.val_loader = DataLoader(
             val_dataset,
-            batch_size=self.config.get("val_batch_size", batch_size),
+            batch_size=batch_size,
             num_workers=self.config["val_workers"],
             collate_fn=collate_fn,
             pin_memory=True,
@@ -192,8 +201,8 @@ class LaneGCN(BasePredictor):
         # convert to json serializable
         infer_results = cpu(results)
         save_path = Path(self.save_dir)
-        infer_save_path = save_path / Path("inference_results")
-        eval_save_path = save_path / Path("evaluation_results")
+        infer_save_path = save_path / Path("predictions/lanegcn/")
+        eval_save_path = save_path / Path("evaluations/lanegcn/")
         # make save directories for both inference and evaluation results
         infer_save_path.mkdir(parents=True, exist_ok=True)
         eval_save_path.mkdir(parents=True, exist_ok=True)
@@ -240,9 +249,10 @@ class LaneGCN(BasePredictor):
         train_dataset = Dataset(dataroot, self.config,
                                 maps_dir=map_dataroot,
                                 split="train", train=True)
+
         self.train_loader = DataLoader(
             train_dataset,
-            batch_size=self.config.get("batch_size", batch_size),
+            batch_size=batch_size,
             num_workers=self.config["workers"],
             collate_fn=collate_fn,
             pin_memory=True,
@@ -250,14 +260,13 @@ class LaneGCN(BasePredictor):
         )
 
         # Create save directory
-        self.save_dir = Path(self.config.get("save_dir", work_dir))
-        if not self.save_dir.exists():
-            self.save_dir.mkdir(parents=True, exist_ok=True)
+        self.save_dir = Path(work_dir)
+        self.save_dir.mkdir(parents=True, exist_ok=True)
 
         epoch = self.config.get("epoch", 0)
         # find remaining epochs
         self.remaining_epochs = int(
-            np.ceil(self.config.get("num_epochs", epochs) - epoch))
+            np.ceil(epochs - epoch))
         for i in tqdm(range(self.remaining_epochs)):
             self.__train_epoch(epoch + i)
 
@@ -331,10 +340,10 @@ class Net(nn.Module):
            feature from A2A
     """
 
-    def __init__(self, config: str) -> None:
+    def __init__(self, config: dict) -> None:
         """
         Initializes the LaneGCN network given a configuration file.
-        :param config: the path to the network's configuration file
+        :param config: Network's configuration
         """
         super(Net, self).__init__()
         self.config = config
@@ -811,7 +820,7 @@ class M2A(nn.Module):
         map information from lane nodes to actor nodes.
     """
 
-    def __init__(self, n_actor: int, n_map: int, config: str):
+    def __init__(self, n_actor: int, n_map: int, config: dict):
         """
         Intilializes the M2A network. M2A fuses updated map features with 
         real-time traffic information back to the actors. Given a lane node, the
@@ -819,7 +828,7 @@ class M2A(nn.Module):
         attention layer.
         :param n_map: the number of lane nodes in the map.
         :param n_actor: the number of actor nodes.
-        :param config: the path to the network's configuration file.
+        :param config: Network's configuration.
         """
         super(M2A, self).__init__()
         norm = "GN"
@@ -871,7 +880,7 @@ class A2A(nn.Module):
     Class for the actor to actor block: performs interactions among actors.
     """
 
-    def __init__(self, n_actor: int, config: str):
+    def __init__(self, n_actor: int, config: dict):
         """
         Intilializes the A2A network. A2A handles the interactions between 
         actors and produces the output actor features, which are then used by 
@@ -879,7 +888,7 @@ class A2A(nn.Module):
         features from its context actor nodes are aggregated using a spatial 
         attention layer.
         :param n_actor: the number of actor nodes.
-        :param config: the path to the network's configuration file.
+        :param config: Network's configuration.
         """
         super(A2A, self).__init__()
         norm = "GN"
@@ -925,13 +934,13 @@ class PredNet(nn.Module):
     """
 
     def __init__(self, num_mods: int, n_actor: int, num_preds: int,
-                 config: str):
+                 config: dict):
         """
         Intilializes the prediction network. 
         :param n_mods: the number of predicted trajectories.
         :param n_actor: the number of actor nodes
         :param num_preds: the number of predicted frames.
-        :param config: the path to the network's configuration file.
+        :param config: Network's configuration.
         """
         super(PredNet, self).__init__()
         norm = "GN"

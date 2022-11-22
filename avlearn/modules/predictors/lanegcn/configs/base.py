@@ -1,27 +1,15 @@
 # Copyright (c) 2020 Uber Technologies, Inc. All rights reserved.
 
-import os
-from pathlib import Path
 from avlearn.modules.predictors.lanegcn.utils import StepLR
-
-file_path = os.path.abspath(__file__)
-root_path = os.path.dirname(file_path)
 
 # Train
 seed = 42
 epoch = 0
 opt = "adam"
-num_epochs = 36
 lr = [1e-3, 1e-4]
 lr_epochs = [32]
 lr_func = StepLR(lr, lr_epochs)
-save_dir = Path(root_path) / Path("results")
 
-if not os.path.isabs(save_dir):
-    save_dir = os.path.join(root_path, "results", save_dir)
-
-batch_size = 16
-val_batch_size = 16
 workers = 0
 val_workers = workers
 
