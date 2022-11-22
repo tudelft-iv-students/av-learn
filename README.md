@@ -8,7 +8,7 @@ Moreover, a recent surge in methods that erode the boundaries between the AV sub
 
 
 <p align="center">
-<img src="resources\pipeline_architectures.jpg" width="80%" alt="pipeline architectures overview">
+<img src="docs\resources\pipeline_architectures.jpg" width="80%" alt="pipeline architectures overview">
 </p>
 <p align="center">Figure 1: Overview of different AV pipeline architectures.</p>
 
@@ -36,7 +36,7 @@ pipeline.visualize()
 Figure 2 shows the UML class diagram for a high level depiction of the framework's architecture. In particular, the Pipeline class initializes three different objects of the abstract Task class (*i.e.*, a detector, tracker, and predictor). The Task class is a parent class for the Detector, Tracker, and Predictor classes, which in turn share inheritance relationships with individual models (not shown in the figure). Each model class needs a Trainer and Evaluator class object, which themselves depend on the abstract Loss and Dataset classes. These classes are also parent classes for individual loss classes (*i.e*., Detection, Tracking, Prediction Loss) or datasets respectively.
 
 <p align="center">
-    <img src="resources\Class_Diagram.jpg" width="80%" alt="UML class diagram">
+    <img src="docs\resources\Class_Diagram.jpg" width="80%" alt="UML class diagram">
 </p>
 <p align="center">Figure 2: UML class diagram for high-level depiction of the framework's architecture.</p>
 
