@@ -1,5 +1,5 @@
 # Prerequisites
-In this section we demonstrate how to prepare an environment with PyTorch. AV-Learn works on Linux, Windows and macOS and requires the following packages:
+In this section we demonstrate how to prepare an environment with PyTorch. AV-Learn has been tested and works on Linux, and requires the following packages:
 - Python 3.7+
 - PyTorch 1.3+
 - CUDA 9.2+
@@ -15,48 +15,25 @@ conda create --name avlearn python=3.7 -y
 conda activate avlearn
 ```
 
-**Step 2.** Install PyTorch following [official instructions](https://pytorch.org/get-started/locally/), e.g.
-
-On GPU platforms:
-
-```shell
-conda install pytorch torchvision -c pytorch
-```
-
-On CPU platforms:
-
-```shell
-conda install pytorch torchvision cpuonly -c pytorch
-```
-
-
-
-# Installation
+**Step 2.** Install necessary packages
 ```
 git clone https://github.com/nightrome/av-learn
-cd av-learn/requirements
+cd av-learn/
+
 pip install -r requirements.txt
+
+mim install mmcv-full
+mim install mmdet
+
+pip install cumm-cuXXX && pip install spconv-cuXXX
 ```
 
+Where XXX is the CUDA version that you use. \
+E.g. `pip install cumm-cu113 && pip install spconv-cu113` for CUDA 11.3.
 
 # Dataset Preparation
 ## Before Preparation
-
 It is recommended to use `$av-learn/data` as the root folder for all the datasets.
-If your folder structure is different from the following, you may need to change the corresponding paths in config files.
-
-```
-mmdetection3d
-├── avlearn
-├── data
-│   ├── nuscenes
-│   │   ├── maps
-│   │   ├── samples
-│   │   ├── sweeps
-│   │   ├── v1.0-test
-|   |   ├── v1.0-trainval
-
-```
 
 ## Download and Data Preparation
 
@@ -67,3 +44,12 @@ Download nuScenes V1.0 full dataset data [HERE](https://www.nuscenes.org/downloa
 ```bash
 python avlearn/datasets/tools/create_data.py nuscenes --root-path ./data/nuscenes --out-dir ./data/nuscenes --extra-tag nuscenes
 ```
+
+In order to use the LaneGCN network for the prediction task, you also need map representations for nuScenes. 
+
+First, you have to download the map expansion package from [nuScenes](https://www.nuscenes.org/download). Then, you could either create the map representations using the following script:
+```bash
+python avlearn/datasets/tools/create_nuscenes_graph.py --data_dir ./data/nuscenes --output_dir ./data/nuscenes_representations --maps_dir ./data/nuscenes/maps
+```
+
+or download them from [here](https://drive.google.com/drive/folders/1--28wIYgFBrpG_IxkG04OVhH7dxf6v_B?usp=share_link).
