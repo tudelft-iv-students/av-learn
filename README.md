@@ -55,3 +55,12 @@ Please refer to [experiments](docs/experiments.md) for details on the research q
 
 ## Model Zoo
 Results and models are available in the [model zoo](docs/model_zoo.md).
+
+## Acknowledgement
+We would like to give credit to [MMDetection3D](https://github.com/open-mmlab/mmdetection3d), a powerful tool for 3D Object Detection by [
+OpenMMLab](https://github.com/open-mmlab), which we utilize for the detection task in our framework. Furthermore, we adapted the [AB3DMOT](https://github.com/xinshuoweng/AB3DMOT) implementation of the Kalman Filter, for the tracking task in AV Learn. Finally, our implementation of the LaneGCN network, for the prediction task on the nuScenes dataset, is based on the [official implementation](https://github.com/uber-research/LaneGCN) by [uber-research](https://github.com/uber-research).
+
+Additionally:
+- [mahalanobis_3d_multi_object_tracking](https://github.com/eddyhkchiu/mahalanobis_3d_multi_object_tracking)
+- [LaPred](https://github.com/bdokim/LaPred)
+- [nuscenes_to_argoverse](https://github.com/bhavya01/nuscenes_to_argoverse)
