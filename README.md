@@ -20,17 +20,16 @@ The main motivation for this project is to devise and implement a modular framew
 <Replace with actual code instead of pseudocode>
 The main objective of the framework is to facilitate research. The supported features should simplify the process of training and evaluating different AV sub-modules in a pipeline. The following algorithm showcases a use case of the pipeline. Upon defining the dataset to be used, and the corresponding models for detection, tracking and prediction, the user is able to train, evaluate, and visualize the results of the pipeline with three simple lines of code.  The initialization of the pipeline should also support keyword arguments to enable multitask or end-to-end training, among others. In an ideal solution, the exact same algorithm should be able to run even if a different tracker, predictor, or dataset were used. 
 
-```
+```python
 dataset = NuScenesDataset()
 
 detector = CenterPointDetector()
 tracker = CenterPointTracker()
-predictor = LaneGCNPredictor()
+predictor = LaneGCN()
 
 pipeline = Pipeline([detector, tracker, predictor], **kwargs)
 pipeline.train()
 pipeline.evaluate()
-pipeline.visualize()
 ```
 
 Figure 2 shows the UML class diagram for a high level depiction of the framework's architecture. In particular, the Pipeline class initializes three different objects of the abstract Task class (*i.e.*, a detector, tracker, and predictor). The Task class is a parent class for the Detector, Tracker, and Predictor classes, which in turn share inheritance relationships with individual models (not shown in the figure). Each model class needs a Trainer and Evaluator class object, which themselves depend on the abstract Loss and Dataset classes. These classes are also parent classes for individual loss classes (*i.e*., Detection, Tracking, Prediction Loss) or datasets respectively.
