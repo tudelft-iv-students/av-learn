@@ -1,4 +1,7 @@
-# AV-Learn
+<p align="center">
+<img src="docs\resources\logo.png" alt="AV Learn" width="600"/>
+</p>
+
 In this project we are developing an open-source framework, that implements an end-to-end autonomous vehicle pipeline. Our pipeline currently supports the autonomous vehicle tasks of detection, tracking, and prediction, yet we leave it for future work to incorporate more networks, tasks, or even autonmous driving architecture paradigms.
 
 ## Problem Statement
