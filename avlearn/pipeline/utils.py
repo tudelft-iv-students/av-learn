@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Union
 
 import torch
 
-from avlearn.modules.trackers.kalman_tracker.configs.nuscenes import \
+from ..modules.trackers.kalman_tracker.configs.nuscenes import \
     NUSCENES_TRACKING_CLASSES
 
 

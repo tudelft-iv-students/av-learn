@@ -12,14 +12,14 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-from map_representation.nuscenes_map import NuScenesMap
+from .map_representation.nuscenes_map import NuScenesMap
 from nuscenes import NuScenes
 from nuscenes.eval.prediction.splits import get_prediction_challenge_split
 from nuscenes.prediction import PredictHelper
 from nuscenes.prediction.input_representation.static_layers import \
     load_all_maps
 from torch.utils.data import Dataset
-from utils.data_utils import dilated_nbrs
+from .utils.data_utils import dilated_nbrs
 
 PREDICTION_CLASSES = [
     'bicycle',
@@ -632,7 +632,7 @@ class InferenceNSDataset(NuScenesDataset):
 
     def format_tracking_results(
             self,
-            tracking_results: Dict[Dict[str, Any]]
+            tracking_results: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Dict[str, Dict[str, Any]]]:
         """Format tracking results to facilitate access to tracked objects.
 

@@ -1,1 +1,1 @@
-from centerpoint import CenterPointDetector
+from .centerpoint import CenterPointDetector
