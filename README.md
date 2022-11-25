@@ -41,16 +41,15 @@ Figure 2 shows the UML class diagram for a high level depiction of the framework
 
 
 ## Getting started
-Please refer to [getting started](docs/getting_started.md) for installation and data preparation details.
-
-## Training
-Please refer to [training](docs/training.md) for details on how to train the different supported models as part of a pipeline.
-
-## Inference & Evaluation
-Please refer to [inference & evaluation](docs/inference.md) for details on how to perform inference on a pre-trained pipeline and evaluate its detection, tracking or prediction performance.
+Please refer to [getting started](docs/getting_started.md) for installation, data preparation, and examples about pipeline initialization, training, and evaluation.
 
 ## Experiments
 Please refer to [experiments](docs/experiments.md) for details on the research questions that were explored, by utilizing the AV-Learn framework, our experimental setup, and our findings.
+
+### Findings
+- There is a substantial difference when evaluating models in isolation compared to a pipeline setting
+- The performance of upstream tasks is correlated to the performance of the downstream tasks
+- Multi-task networks may have lower performance in upstream tasks, but better performance with regard to the end-to-end setting
 
 ## Model Zoo
 Results and models are available in the [model zoo](docs/model_zoo.md).
