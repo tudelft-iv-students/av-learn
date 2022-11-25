@@ -1,6 +1,5 @@
 from typing import Union
 
-from avlearn.config.definitions import ROOT_DIR
 from avlearn.datasets.detection.detdataset import DetectionDataset
 from mmcv import Config
 
@@ -9,8 +8,10 @@ class NuScenesDataset(DetectionDataset):
     """
     Dataset wrapper class for mmdetection3d NuScenesDataset.
     """
-    def __init__(self, cfg: Union[str, Config, None] = None, mode: str = 'train',
-                 past_timesteps: int = 0, future_timesteps: int = 0) -> None:
+
+    def __init__(
+            self, cfg: Union[str, Config, None] = None, mode: str = 'train',
+            past_timesteps: int = 0, future_timesteps: int = 0) -> None:
         """
         :param cfg: Config dict or path to config file. 
                     Config dict should at least contain the key "type".
@@ -23,7 +24,7 @@ class NuScenesDataset(DetectionDataset):
                                  return per __getitem__ call. Defaults to 0.
         """
         if cfg is None:
-            cfg = str(ROOT_DIR / 'modules/detectors/mmdet3d/configs/_base_/datasets/nus-3d.py')
+            cfg = str('./configs/nus-3d.py')
         super().__init__(cfg, mode, past_timesteps, future_timesteps)
         if not self.cfg.dataset_type == 'NuScenesDataset':
             raise TypeError("cfg.dataset_type must be 'NuScenesDataset', "
