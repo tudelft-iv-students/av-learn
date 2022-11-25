@@ -26,6 +26,8 @@ mim install mmcv-full
 mim install mmdet
 
 pip install cumm-cuXXX && pip install spconv-cuXXX
+
+pip install .
 ```
 
 Where XXX is the CUDA version that you use. \
