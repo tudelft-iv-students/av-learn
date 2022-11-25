@@ -53,3 +53,81 @@ python avlearn/datasets/tools/create_nuscenes_graph.py --data_dir ./data/nuscene
 ```
 
 or download them from [here](https://drive.google.com/drive/folders/1--28wIYgFBrpG_IxkG04OVhH7dxf6v_B?usp=share_link).
+
+
+
+# Initialize a pipeline
+You can initialize an AV Learn pipeline using a list of modules. The list does not need to contain modules for all of the corresponding tasks of the pipeline, unless end-to-end evaluation is to be performed. In the examples below we initialize different pipelines.
+
+## Example 1
+In this pipeline we use a CenterPointDetector, a non-learning based CenterPointTracker, and the LaneGCN predictor.
+
+```python
+from avlearn.pipeline import Pipeline
+from avlearn.modules.detectors import CenterPointDetector
+from avlearn.modules.trackers import CenterPointTracker
+from avlearn.modules.predictors import LaneGCN
+
+detector = CenterPointDetector()
+tracker = CenterPointTracker()
+predictor = LaneGCN()
+
+pipeline = Pipeline([detector, tracker, predictor])
+```
+
+## Example 2
+In this pipeline we use the KalmanTracker for tracking. Thus the velocity head of the CenterPointDetector can be disabled (optional). 
+```python
+from avlearn.pipeline import Pipeline
+from avlearn.modules.detectors import CenterPointDetector
+from avlearn.modules.trackers import KalmanTracker
+from avlearn.modules.predictors import LaneGCN
+
+detector = CenterPointDetector(velocity=False)
+tracker = KalmanTracker()
+predictor = LaneGCN()
+
+pipeline = Pipeline([detector, tracker, predictor])
+```
+
+## Example 3
+In this pipeline we only define a predictor. We can still use the pipeline for training and individual evaluation of the predictor, but the end-to-end evaluation is disabled.
+```python
+from avlearn.pipeline import Pipeline
+from avlearn.modules.predictors import LaneGCN
+
+predictor = LaneGCN()
+
+pipeline = Pipeline([predictor])
+```
+
+# Training
+The AV Learn framework simplifies the process of trainning the corresponding modules of a pipeline. Using the example below you can train all of the pipeline's trainable modules.
+
+```python
+pipeline.train(
+    dataroot="./data/nuscenes",
+    work_dir="./results/training",
+    n_epochs=[20, 0, 36],
+    batch_size=[8, 0, 4],
+    map_dataroot="./data/nuscenes_representations" # Model specific (LaneGCN)
+)
+```
+
+# Evaluation
+Once you obtain the pretrained models, and their checkpoints, evaluating them either individually, or the end-to-end performance of the pipeline, can be performed using the following block of code.
+
+```python
+detector = CenterPointDetector(checkpoint="/path/to/checkpoint/")
+tracker = CenterPointTracker()
+predictor = LaneGCN(checkpoint_pth="/path/to/checkpoint/")
+
+pipeline = Pipeline([detector, tracker, predictor])
+
+pipeline.evaluate(
+    dataroot="./data/nuscenes",
+    work_dir="./results/evaluation",  
+    end_to_end=False, # or set True for end-to-end evaluation
+    map_dataroot="./data/nuscenes_representations" # Model specific (LaneGCN)
+)
+```
