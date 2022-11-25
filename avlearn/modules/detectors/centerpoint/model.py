@@ -32,7 +32,7 @@ class CenterPointDetector(MMDet3DDetector):
             config = "novelo_" + config
 
         self.cfg_file = Path(
-            __file__).parents[1] / "mmdet3d/configs/centerpoint" / config
+            __file__).parent / "configs" / config
         cfg = Config.fromfile(self.cfg_file)
 
         super().__init__(
